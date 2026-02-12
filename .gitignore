@@ -1,0 +1,20 @@
+# Power BI Binary Files (don't version control these)
+*.pbix
+
+# Power BI Cache and Local Settings
+**/.pbi/localSettings.json
+**/.pbi/cache.abf
+.pbiworkspace
+
+# Backup files
+*.backup
+*.bak
+
+# Temporary files
+~$*
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini

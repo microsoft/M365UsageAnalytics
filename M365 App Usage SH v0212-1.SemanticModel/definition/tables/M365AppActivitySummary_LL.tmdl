@@ -1,0 +1,78 @@
+table M365AppActivitySummary_LL
+	lineageTag: 684cf13c-69f3-461e-8a01-16f47a4ef740
+
+	column UserId
+		lineageTag: 8371e306-c17b-4b0f-a168-b5f385312438
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: SecDemoM365Usage[UserId]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Word Activity Count'
+		formatString: 0
+		lineageTag: ef891b22-ee9a-494e-9f15-1ad4be54197a
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Word Activity Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Excel Activity Count'
+		formatString: 0
+		lineageTag: 259993e1-d58c-4f5c-ad89-f90d717ca190
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Excel Activity Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'PowerPoint Activity Count'
+		formatString: 0
+		lineageTag: bab9f5a3-bcc0-4af9-a33e-f71ba909cd8b
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [PowerPoint Activity Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Word Excel PPT Files Activity  Total'
+		formatString: 0
+		lineageTag: 7a56a772-e2b6-40e4-882d-659a9c0cd24f
+		summarizeBy: sum
+		sourceColumn: [M365 Apps Total]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition M365AppActivitySummary_LL = calculated
+		mode: import
+		source = ```
+				
+				SUMMARIZE (
+				    SecDemoM365Usage,
+				    [UserId],
+				    "Word Activity Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            LOWER(SecDemoM365Usage[SourceFileExtension]) IN { "docx", "doc", "dotx" }
+				        ),
+				    "Excel Activity Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            LOWER(SecDemoM365Usage[SourceFileExtension]) IN { "xlsx", "xls", "xlsm", "csv" }
+				        ),
+				    "PowerPoint Activity Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            LOWER(SecDemoM365Usage[SourceFileExtension]) IN { "pptx", "ppt", "ppsx" }
+				        ),
+				    "M365 Apps Total", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            LOWER(SecDemoM365Usage[SourceFileExtension]) IN { "docx", "doc", "dotx", "xlsx", "xls", "xlsm", "csv", "pptx", "ppt", "ppsx" }
+				        )
+				)
+				```
+
+	annotation PBI_Id = 3486df6b434c42908bf70b631fd3a8db
+

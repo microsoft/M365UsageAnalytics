@@ -1,0 +1,56 @@
+table 'Tier Reference'
+	lineageTag: ffaf92e0-7b16-4866-9465-bcb2e8179a68
+
+	column Tier
+		formatString: 0
+		lineageTag: 924e96b6-7c26-4afb-9c96-a58d3e566d59
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Tier]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Tier Label'
+		lineageTag: a23abe02-87c3-4a40-8839-cf075b1e8357
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Tier Label]
+
+		annotation SummarizationSetBy = Automatic
+
+	column ShowInChart
+		formatString: 0
+		lineageTag: 0235fb4f-8ada-4729-ac00-1a6379acf683
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [ShowInChart]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		lineageTag: 5b312f9d-97c5-4eee-8755-e6584cab23f4
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Description]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Tier Reference' = calculated
+		mode: import
+		source =
+				
+				DATATABLE(
+				    "Tier", INTEGER,
+				    "Tier Label", STRING,
+				    "ShowInChart", INTEGER,
+				    "Description", STRING,
+				    {
+				        {1, "Tier 1 (Top 10%)", 1, "Core high-value group"},
+				        {2, "Tier 2 (10-25%)", 1, "Well-rounded power users"},
+				        {3, "Tier 3 (25-50%)", 1, "Regular active users with growth potential"},
+				        {4, "Tier 4 (Remaining 50%)", 0, "Broad inclusion (if budget allows)"}
+				    }
+				)
+
+	annotation PBI_Id = 96bf663677d7452e8448d1bee18629c5
+

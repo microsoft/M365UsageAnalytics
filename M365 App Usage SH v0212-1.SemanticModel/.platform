@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "M365 App Usage SH v0212-1"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "f5f18a83-6f4e-41de-84ca-fb1b17e2ff44"
+  }
+}

@@ -1,0 +1,116 @@
+table 'PowerPoint Activity by App Summary LL'
+	lineageTag: 1633885a-522d-4a35-8857-3f45e0b0b9bc
+
+	column UserId
+		lineageTag: a39dcb28-3531-4cbe-a675-1c52457850b7
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: SecDemoM365Usage[UserId]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'PowerPoint Web Count'
+		formatString: 0
+		lineageTag: 9e0b50ed-fad8-40f5-b3b8-2f263a4c1959
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [PowerPoint Web Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'PowerPoint Windows Count'
+		formatString: 0
+		lineageTag: 905bb9d3-d993-44a8-b58a-08f916c13b2c
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [PowerPoint Windows Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'PowerPoint Mac Count'
+		formatString: 0
+		lineageTag: 8c199dc4-b975-42f8-80f7-23534578fb07
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [PowerPoint Mac Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'PowerPoint iOS Count'
+		formatString: 0
+		lineageTag: 50ec8211-25b1-4c54-9b13-f2f3de480c3f
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [PowerPoint iOS Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'PowerPoint Android Count'
+		formatString: 0
+		lineageTag: 63e208af-b03e-40e7-9e46-3bd6b35bbab2
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [PowerPoint Android Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Unknown Count'
+		formatString: 0
+		lineageTag: 46d38b39-fdcb-4248-8d2f-44363b872d1f
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Unknown Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'PowerPoint Total Activity'
+		formatString: 0
+		lineageTag: 1ae79c9f-05ca-4333-800f-41122f6ed4fd
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [PowerPoint Total Activity]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'PowerPoint Activity by App Summary LL' = calculated
+		mode: import
+		source =
+				
+				SUMMARIZE (
+				    FILTER(SecDemoM365Usage, LOWER(SecDemoM365Usage[SourceFileExtension]) IN { "pptx", "ppt", "ppsx" }),
+				    [UserId],
+				    "PowerPoint Web Count",
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[ApplicationDisplayName] IN { "PowerPoint Online", "PowerPoint for the web", "WebPowerPoint", "Office Online" }
+				        ),
+				    "PowerPoint Windows Count",
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[ApplicationDisplayName] IN { "Microsoft PowerPoint", "PowerPoint" }
+				        ),
+				    "PowerPoint Mac Count",
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[ApplicationDisplayName] IN { "PowerPoint for Mac", "Microsoft PowerPoint for Mac" }
+				        ),
+				    "PowerPoint iOS Count",
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[ApplicationDisplayName] IN { "PowerPoint Mobile", "Microsoft PowerPoint for iOS" }
+				        ),
+				    "PowerPoint Android Count",
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[ApplicationDisplayName] IN { "PowerPoint for Android", "Microsoft PowerPoint for Android" }
+				        ),
+				    "Unknown Count",
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            NOT(SecDemoM365Usage[ApplicationDisplayName] IN { "PowerPoint Online", "PowerPoint for the web", "WebPowerPoint", "Office Online", "Microsoft PowerPoint", "PowerPoint", "PowerPoint for Mac", "Microsoft PowerPoint for Mac", "PowerPoint Mobile", "Microsoft PowerPoint for iOS", "PowerPoint for Android", "Microsoft PowerPoint for Android" })
+				        ),
+				    "PowerPoint Total Activity", COUNTROWS(SecDemoM365Usage)
+				)
+
+	annotation PBI_Id = 989fe16fcc78404897459ebefb2e39b3
+

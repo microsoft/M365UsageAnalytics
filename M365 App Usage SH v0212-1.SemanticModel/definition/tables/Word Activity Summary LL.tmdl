@@ -1,0 +1,164 @@
+table 'Word Activity Summary LL'
+	lineageTag: 2da7b1f7-fce4-4d1e-acbc-85aa3c9a3ac3
+
+	measure 'Word Mac Activity Measure' =
+			
+			CALCULATE(
+			    COUNTROWS(SecDemoM365Usage),
+			    LOWER(SecDemoM365Usage[SourceFileExtension]) IN { "docx", "doc", "dotx" },
+			    SecDemoM365Usage[ApplicationDisplayName] IN { "Word for Mac", "Microsoft Word for Mac" }
+			)
+		formatString: 0
+		lineageTag: 61cc4273-37f3-4ff6-8845-9c999db4a916
+
+	column UserId
+		lineageTag: e9a675ab-8632-4ba2-9165-5a20f3beb640
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: SecDemoM365Usage[UserId]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Word Viewed Count'
+		formatString: 0
+		lineageTag: 4b59a8df-9758-4b1c-b9d8-09188d317744
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Word Viewed Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Word Modified Count'
+		formatString: 0
+		lineageTag: de6a73ce-2a38-46e6-8129-23fbd5437784
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Word Modified Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Word Downloaded Count'
+		formatString: 0
+		lineageTag: f934fca0-db06-4be0-91b0-fdd903a808d9
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Word Downloaded Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Word Uploaded Count'
+		formatString: 0
+		lineageTag: 3183b3b9-7018-48fe-81c1-f5f125df0b99
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Word Uploaded Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Word Total Activity'
+		formatString: 0
+		lineageTag: e925506d-e8f3-4ddc-bbcf-e3cd4a04c293
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Word Total Activity]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Word Other Operations Count'
+		formatString: 0
+		lineageTag: 960f28c8-e0e1-4427-8da8-b422d7118677
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Word Other Operations Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Word Tier' =
+			
+			VAR RawScore = [Word Total Activity]
+			VAR P90 = PERCENTILEX.INC(
+			    FILTER(ALL('Word Activity Summary LL'), NOT(ISBLANK([Word Total Activity]))),
+			    [Word Total Activity],
+			    0.9
+			)
+			VAR P75 = PERCENTILEX.INC(
+			    FILTER(ALL('Word Activity Summary LL'), NOT(ISBLANK([Word Total Activity]))),
+			    [Word Total Activity],
+			    0.75
+			)
+			VAR P50 = PERCENTILEX.INC(
+			    FILTER(ALL('Word Activity Summary LL'), NOT(ISBLANK([Word Total Activity]))),
+			    [Word Total Activity],
+			    0.5
+			)
+			RETURN
+			IF(
+			    ISBLANK(RawScore) || RawScore = 0,
+			    BLANK(),
+			    SWITCH(
+			        TRUE(),
+			        RawScore >= P90, 1,
+			        RawScore >= P75, 2,
+			        RawScore >= P50, 3,
+			        4
+			    )
+			)
+		formatString: 0
+		lineageTag: 874429a0-1bf2-49aa-8128-91a0e383a5e8
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Word Tier Label' =
+			
+			SWITCH(
+			    [Word Tier],
+			    1, "Tier 1 (Top 10%)",
+			    2, "Tier 2 (10-25%)",
+			    3, "Tier 3 (25-50%)",
+			    4, "Tier 4 (Remaining 50%)",
+			    BLANK()
+			)
+		lineageTag: d9eb5829-9706-4e34-99ee-281abc2c4aa8
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Word Activity Summary LL' = calculated
+		mode: import
+		source = ```
+				
+				SUMMARIZE (
+				    FILTER(SecDemoM365Usage, LOWER(SecDemoM365Usage[SourceFileExtension]) IN { "docx", "doc", "dotx" }),
+				    [UserId],
+				    "Word Viewed Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "FileViewed"
+				        ),
+				    "Word Modified Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "FileModified"
+				        ),
+				    "Word Downloaded Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "FileDownloaded"
+				        ),
+				    "Word Uploaded Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "FileUploaded"
+				        ),
+				    "Word Other Operations Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            NOT(SecDemoM365Usage[Operation] IN { "FileViewed", "FileModified", "FileDownloaded", "FileUploaded" })
+				        ),
+				    "Word Total Activity", COUNTROWS(SecDemoM365Usage)
+				)
+				```
+
+	annotation PBI_Id = adce2114bdf248259ca1452392c1baaf
+

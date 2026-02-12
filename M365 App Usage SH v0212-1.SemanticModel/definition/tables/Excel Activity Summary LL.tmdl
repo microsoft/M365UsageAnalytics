@@ -1,0 +1,154 @@
+table 'Excel Activity Summary LL'
+	lineageTag: 03adf90f-a9e3-4f0c-9035-115351617d35
+
+	column UserId
+		lineageTag: ed2d1477-036f-4700-a91e-4c117c4d51c3
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: SecDemoM365Usage[UserId]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Excel Viewed Count'
+		formatString: 0
+		lineageTag: c9e1d85a-7695-46fa-8fd4-b14433a5797c
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Excel Viewed Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Excel Modified Count'
+		formatString: 0
+		lineageTag: aeac15e0-a80e-4ca3-906f-ce8e65cfb234
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Excel Modified Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Excel Downloaded Count'
+		formatString: 0
+		lineageTag: eea91451-1422-4432-b85e-bd72d4ea5088
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Excel Downloaded Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Excel Uploaded Count'
+		formatString: 0
+		lineageTag: 60f50667-a59d-4127-a412-f3c1cbf5b6be
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Excel Uploaded Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Excel Other Operations Count'
+		formatString: 0
+		lineageTag: 8bc17677-b3e7-44ff-80ba-265b7ceb5265
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Excel Other Operations Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Excel Total Activity'
+		formatString: 0
+		lineageTag: 591f3f3e-1dce-4dc2-b0e5-b28a84f6e321
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Excel Total Activity]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Excel Tier' =
+			
+			VAR RawScore = [Excel Total Activity]
+			VAR P90 = PERCENTILEX.INC(
+			    FILTER(ALL('Excel Activity Summary LL'), NOT(ISBLANK([Excel Total Activity]))),
+			    [Excel Total Activity],
+			    0.9
+			)
+			VAR P75 = PERCENTILEX.INC(
+			    FILTER(ALL('Excel Activity Summary LL'), NOT(ISBLANK([Excel Total Activity]))),
+			    [Excel Total Activity],
+			    0.75
+			)
+			VAR P50 = PERCENTILEX.INC(
+			    FILTER(ALL('Excel Activity Summary LL'), NOT(ISBLANK([Excel Total Activity]))),
+			    [Excel Total Activity],
+			    0.5
+			)
+			RETURN
+			IF(
+			    ISBLANK(RawScore) || RawScore = 0,
+			    BLANK(),
+			    SWITCH(
+			        TRUE(),
+			        RawScore >= P90, 1,
+			        RawScore >= P75, 2,
+			        RawScore >= P50, 3,
+			        4
+			    )
+			)
+		formatString: 0
+		lineageTag: 4e1bbde5-7fca-49bd-816c-cca87a5a8691
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Excel Tier Label' =
+			
+			SWITCH(
+			    [Excel Tier],
+			    1, "Tier 1 (Top 10%)",
+			    2, "Tier 2 (10-25%)",
+			    3, "Tier 3 (25-50%)",
+			    4, "Tier 4 (Remaining 50%)",
+			    BLANK()
+			)
+		lineageTag: 244a5552-3623-4575-98ad-13ab754558a9
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Excel Activity Summary LL' = calculated
+		mode: import
+		source = ```
+				
+				SUMMARIZE (
+				    FILTER(SecDemoM365Usage, LOWER(SecDemoM365Usage[SourceFileExtension]) IN { "xlsx", "xls", "xlsm", "csv" }),
+				    [UserId],
+				    "Excel Viewed Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "FileViewed"
+				        ),
+				    "Excel Modified Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "FileModified"
+				        ),
+				    "Excel Downloaded Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "FileDownloaded"
+				        ),
+				    "Excel Uploaded Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "FileUploaded"
+				        ),
+				    "Excel Other Operations Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            NOT(SecDemoM365Usage[Operation] IN { "FileViewed", "FileModified", "FileDownloaded", "FileUploaded" })
+				        ),
+				    "Excel Total Activity", COUNTROWS(SecDemoM365Usage)
+				)
+				```
+
+	annotation PBI_Id = 2889f1c8f0c84a0e9c8496e2e86bc8be
+

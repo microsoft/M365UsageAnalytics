@@ -1,0 +1,91 @@
+table 'Action Filter'
+	lineageTag: 4e7e4f99-5221-4ec0-acf6-5753e7e4bac9
+
+	measure 'DEBUG Filter Check' = ```
+			
+			VAR SelectedApp = SELECTEDVALUE('App Selection'[AppName], "M365 All Apps")
+			
+			VAR UserTierLabel = 
+			    SWITCH(
+			        SelectedApp,
+			        "Teams", [Teams Percentile Weighted],
+			        "Outlook", [Outlook Percentile Weighted],
+			        "Word", [Word Percentile Weighted],
+			        "Excel", [Excel Percentile Weighted],
+			        "PowerPoint", [PowerPoint Percentile Weighted],
+			        "M365 All Apps", [M365 All Apps Percentile Weighted],
+			        [M365 All Apps Percentile Weighted]
+			    )
+			
+			VAR UserAction = 
+			    SWITCH(
+			        UserTierLabel,
+			        "Top 10%", "🔴 Prioritize",
+			        "10-25%", "🟠 License Next",
+			        "25-50%", "🟡 Enablement",
+			        "Bottom 50%", "⚪ Monitor",
+			        "⚪ Monitor"
+			    )
+			
+			RETURN
+			    "App: " & SelectedApp & " | Tier: " & UserTierLabel & " | Action: " & UserAction
+			```
+		isHidden
+		lineageTag: 9c9c3506-b6c7-4605-a471-6fe0204984d8
+
+	measure 'Debug License Values' =
+			
+			VAR TrueCount = CALCULATE(COUNTROWS(SecDemEntraUsers), SecDemEntraUsers[hasLicense] = "True")
+			VAR FalseCount = CALCULATE(COUNTROWS(SecDemEntraUsers), SecDemEntraUsers[hasLicense] = "False")
+			VAR BlankCount = CALCULATE(COUNTROWS(SecDemEntraUsers), ISBLANK(SecDemEntraUsers[hasLicense]))
+			RETURN
+			"True:" & TrueCount & " False:" & FalseCount & " Blank:" & BlankCount
+		formatString: 0
+		isHidden
+		lineageTag: 7ab9dd8a-81e8-4a7b-ba82-8cb1d8fab940
+
+	measure 'Debug Active Users' =
+			
+			DISTINCTCOUNT(SecDemoM365Usage[UserId])
+		formatString: 0
+		isHidden
+		lineageTag: 7d02ee21-4f33-4442-8f66-de05db93a3d4
+
+	column ActionName
+		dataType: string
+		lineageTag: 8628e2eb-1f5d-4a5c-b70c-525c36c3606e
+		summarizeBy: none
+		sourceColumn: ActionName
+		sortByColumn: ActionOrder
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column ActionOrder
+		dataType: string
+		lineageTag: d9df80a6-3a6c-4c26-a1e3-9959e305f9f6
+		summarizeBy: none
+		sourceColumn: ActionOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Action Filter' = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i45WckwuyczP80vMTVXSgXL8i1JSi5RidaKVAooy84sySzKrQJKGYCGfzOTUvOJUBb/UihKgoBFY0DUvMSknNTc1DyRkDBbyzc/LLMkvAvJNlGJjAQ==", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [#"(blank)" = _t, #"(blank).1" = _t]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"(blank)", type text}, {"(blank).1", type text}}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Changed Type",{{"(blank)", "ActionName"}, {"(blank).1", "ActionOrder"}}),
+				    #"Removed Top Rows" = Table.Skip(#"Renamed Columns",1),
+				    #"Replaced Value" = Table.ReplaceValue(#"Removed Top Rows","Prioritize","🔴 Prioritize",Replacer.ReplaceText,{"ActionName"}),
+				    #"Replaced Value1" = Table.ReplaceValue(#"Replaced Value","License Next","🟠 License Next",Replacer.ReplaceText,{"ActionName"}),
+				    #"Replaced Value2" = Table.ReplaceValue(#"Replaced Value1","Enablement","🟡 Enablement",Replacer.ReplaceText,{"ActionName"}),
+				    #"Replaced Value3" = Table.ReplaceValue(#"Replaced Value2","Monitor","⚪ Monitor",Replacer.ReplaceText,{"ActionName"})
+				in
+				    #"Replaced Value3"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

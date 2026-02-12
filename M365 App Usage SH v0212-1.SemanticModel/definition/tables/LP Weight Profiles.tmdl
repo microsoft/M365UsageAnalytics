@@ -1,0 +1,70 @@
+/// Weight profile presets for the Licensing Page - Balanced, Collaboration Focus, and Content Creation Focus
+table 'LP Weight Profiles'
+	lineageTag: afae0f67-db52-40c7-9532-cc3471ed9daa
+
+	column ProfileName
+		lineageTag: eebd6385-d789-438c-bdf9-c5d5ec418514
+		isNameInferred
+		sourceColumn: [ProfileName]
+
+	column ProfileOrder
+		lineageTag: 112e8ef6-9423-49b5-a6c7-3bbefa968f7b
+		isNameInferred
+		sourceColumn: [ProfileOrder]
+
+	column TeamsW
+		lineageTag: 533edb06-4339-4159-b442-f1b27d45f9ae
+		isNameInferred
+		sourceColumn: [TeamsW]
+
+	column OutlookW
+		lineageTag: b9d95c06-3f7e-41f8-83b5-e9c76ac141a0
+		isNameInferred
+		sourceColumn: [OutlookW]
+
+	column WordW
+		lineageTag: 0384a232-edcf-4f62-8759-2cccf826ef96
+		isNameInferred
+		sourceColumn: [WordW]
+
+	column ExcelW
+		lineageTag: 32de7b87-0de5-4a1b-9a69-080c28a25a22
+		isNameInferred
+		sourceColumn: [ExcelW]
+
+	column PowerPointW
+		lineageTag: 53581055-cf65-4512-a240-61fb309c4efa
+		isNameInferred
+		sourceColumn: [PowerPointW]
+
+	column Description
+		lineageTag: 6cdc1738-c05b-41ea-a42d-fea9151baa67
+		isNameInferred
+		sourceColumn: [Description]
+
+	column CopilotChatW
+		lineageTag: 583ded06-bc8f-44cd-8233-b81bd65a2ab7
+		isNameInferred
+		sourceColumn: [CopilotChatW]
+
+	partition 'LP Weight Profiles' = calculated
+		mode: import
+		source =
+				DATATABLE(
+				    "ProfileName", STRING,
+				    "ProfileOrder", INTEGER,
+				    "TeamsW", INTEGER,
+				    "OutlookW", INTEGER,
+				    "WordW", INTEGER,
+				    "ExcelW", INTEGER,
+				    "PowerPointW", INTEGER,
+				    "CopilotChatW", INTEGER,
+				    "Description", STRING,
+				    {
+				        {"Balanced", 1, 17, 17, 17, 17, 16, 16, "Equal weight across all M365 apps"},
+				        {"Collaboration Focus", 2, 30, 30, 8, 8, 8, 16, "Prioritize Teams & Outlook power users"},
+				        {"Content Creation Focus", 3, 10, 10, 20, 20, 20, 20, "Prioritize Word, Excel & PowerPoint power users"},
+				        {"Custom", 4, 17, 17, 17, 17, 16, 16, "Set your own weights using the sliders below"}
+				    }
+				)
+

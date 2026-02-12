@@ -1,0 +1,236 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "a3667064a85154c655d0",
+  "position": {
+    "x": 753.623188405797,
+    "y": 377.97101449275362,
+    "z": 11000,
+    "height": 342.02898550724638,
+    "width": 526.37681159420288,
+    "tabOrder": 11000
+  },
+  "visual": {
+    "visualType": "lineClusteredColumnComboChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "SecDemEntraUsers"
+                    }
+                  },
+                  "Property": "department"
+                }
+              },
+              "queryRef": "SecDemEntraUsers.department",
+              "nativeQueryRef": "department",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Organization Measures LL"
+                    }
+                  },
+                  "Property": "Total Teams Activity"
+                }
+              },
+              "queryRef": "Organization Measures LL.Total Teams Activity",
+              "nativeQueryRef": "Teams Activity",
+              "displayName": "Teams Activity"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Organization Measures LL"
+                    }
+                  },
+                  "Property": "Total Email Activity"
+                }
+              },
+              "queryRef": "Organization Measures LL.Total Email Activity",
+              "nativeQueryRef": "Email Activity",
+              "displayName": "Email Activity"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Organization Measures LL"
+                    }
+                  },
+                  "Property": "Total Word Activity"
+                }
+              },
+              "queryRef": "Organization Measures LL.Total Word Activity",
+              "nativeQueryRef": "Word Activity",
+              "displayName": "Word Activity"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Organization Measures LL"
+                    }
+                  },
+                  "Property": "Total Excel Activity"
+                }
+              },
+              "queryRef": "Organization Measures LL.Total Excel Activity",
+              "nativeQueryRef": "Excel Activity",
+              "displayName": "Excel Activity"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Organization Measures LL"
+                    }
+                  },
+                  "Property": "Total PPT Activity"
+                }
+              },
+              "queryRef": "Organization Measures LL.Total PPT Activity",
+              "nativeQueryRef": "PPT Activity",
+              "displayName": "PPT Activity"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Organization Measures LL"
+                  }
+                },
+                "Property": "Total Teams Activity"
+              }
+            },
+            "direction": "Descending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "objects": {
+      "dataPoint": [
+        {
+          "properties": {
+            "fill": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "ThemeDataColor": {
+                      "ColorId": 7,
+                      "Percent": 0.6
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Activity by App'"
+                }
+              }
+            },
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'wf_standard-font, helvetica, arial, sans-serif'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "background": [
+        {
+          "properties": {
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "ThemeDataColor": {
+                      "ColorId": 0,
+                      "Percent": -0.1
+                    }
+                  }
+                }
+              }
+            },
+            "transparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "78D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "spacing": [
+        {
+          "properties": {
+            "verticalSpacing": {
+              "expr": {
+                "Literal": {
+                  "Value": "10D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

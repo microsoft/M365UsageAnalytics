@@ -1,0 +1,47 @@
+table 'App Actions Table'
+	lineageTag: bbb3a522-2441-469b-8af8-aede79e8daf5
+
+	column AppOrder
+		formatString: 0
+		lineageTag: aeb01000-5359-442e-823d-2da80c3a341a
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [AppOrder]
+
+		annotation SummarizationSetBy = Automatic
+
+	column AppName
+		lineageTag: d13bd07c-7510-46f0-8850-70277bd33207
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [AppName]
+
+		annotation SummarizationSetBy = Automatic
+
+	column AppDisplay
+		lineageTag: 014e6463-e842-49b0-96a0-f4ce02f653c4
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [AppDisplay]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'App Actions Table' = calculated
+		mode: import
+		source =
+				
+				DATATABLE(
+				    "AppOrder", INTEGER,
+				    "AppName", STRING,
+				    "AppDisplay", STRING,
+				    {
+				        {1, "Teams", "Teams 💬"},
+				        {2, "Outlook", "Outlook 📧"},
+				        {3, "Word", "Word 📝"},
+				        {4, "Excel", "Excel Activity 📈"},
+				        {5, "PowerPoint", "PowerPoint 📊"}
+				    }
+				)
+
+	annotation PBI_Id = 8df7de1f56c5438a8ccdc55232cc163c
+

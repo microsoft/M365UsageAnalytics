@@ -1,0 +1,26 @@
+table 'Copilot Chat Weight %'
+	lineageTag: f5ad6dcc-e02c-47fe-9e33-3f113d610679
+
+	measure 'Copilot Chat Weight Value' = SELECTEDVALUE('Copilot Chat Weight %'[Copilot Chat Weight %], 16)
+		formatString: 0
+		lineageTag: 90137f66-c214-4723-861d-2a944772e9ca
+
+	column 'Copilot Chat Weight %'
+		formatString: 0
+		lineageTag: 63c9ab79-70d2-4f62-b046-9617da196aad
+		summarizeBy: none
+		sourceColumn: [Value]
+
+		extendedProperty ParameterMetadata =
+				{
+				  "version": 0
+				}
+
+		annotation SummarizationSetBy = User
+
+	partition 'Copilot Chat Weight %' = calculated
+		mode: import
+		source = GENERATESERIES(0, 100, 1)
+
+	annotation PBI_Id = copilotchatweight2026
+

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "power-bi-modeling": {
+      "command": "cmd.exe",
+      "args": ["/c", "C:/Users/shahegde/.vscode/extensions/analysis-services.powerbi-modeling-mcp-0.1.9-win32-x64/server/powerbi-modeling-mcp.exe", "--start", "--skip-confirmation"]
+    }
+  }
+}

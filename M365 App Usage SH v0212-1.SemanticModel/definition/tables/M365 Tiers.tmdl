@@ -1,0 +1,79 @@
+table 'M365 Tiers'
+	lineageTag: 5cc29562-101f-448a-8778-bcb48c79fed5
+
+	measure 'Show User Based on Priority' = ```
+			
+			VAR M365Tier = [Selected App M365 Tier Label]
+			VAR CopilotTier = [Selected App Copilot Tier Label]
+			VAR SelectedPriorityFilter = SELECTEDVALUE('Priority Filter'[PriorityName])
+			
+			VAR UserPriority = 
+			    SWITCH(TRUE(),
+			        M365Tier = "Top 10%" && CopilotTier = "Bottom 50%", "Critical",
+			        M365Tier = "Top 10%" && CopilotTier = "25-50%", "High",
+			        M365Tier = "10-25%" && CopilotTier = "Bottom 50%", "High",
+			        M365Tier = "Top 10%" && CopilotTier = "10-25%", "Medium",
+			        M365Tier = "10-25%" && CopilotTier = "25-50%", "Medium",
+			        M365Tier = "25-50%" && CopilotTier = "Bottom 50%", "Medium",
+			        M365Tier = "Top 10%" && CopilotTier = "Top 10%", "Promoter",
+			        M365Tier = "10-25%" && CopilotTier = "Top 10%", "Promoter",
+			        M365Tier = "25-50%" && CopilotTier = "Top 10%", "Promoter",
+			        M365Tier = "Bottom 50%" && CopilotTier = "Top 10%", "Promoter",
+			        M365Tier = "Bottom 50%" && CopilotTier = "10-25%", "Promoter",
+			        "Low"
+			    )
+			
+			RETURN
+			IF(
+			    ISBLANK(SelectedPriorityFilter) || UserPriority = SelectedPriorityFilter,
+			    1,
+			    0
+			)
+			```
+		formatString: 0
+		lineageTag: bbd882c4-119c-4528-a150-66856492a445
+
+	column M365TierOrder
+		formatString: 0
+		lineageTag: 6f46655f-a751-4a74-a247-b72c33a3019b
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [M365TierOrder]
+
+		annotation SummarizationSetBy = Automatic
+
+	column M365TierName
+		lineageTag: eee78f23-2d84-4571-aad2-a4bfe1fac732
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [M365TierName]
+		sortByColumn: M365TierOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	column M365TierDisplay
+		lineageTag: a16a2b27-66ab-441c-899a-65b5279fa804
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [M365TierDisplay]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'M365 Tiers' = calculated
+		mode: import
+		source =
+				
+				DATATABLE(
+				    "M365TierOrder", INTEGER,
+				    "M365TierName", STRING,
+				    "M365TierDisplay", STRING,
+				    {
+				        {1, "Top 10%", "🟢 Top 10%"},
+				        {2, "10-25%", "🟡 10-25%"},
+				        {3, "25-50%", "🟠 25-50%"},
+				        {4, "Bottom 50%", "⚪ Bottom 50%"}
+				    }
+				)
+
+	annotation PBI_Id = 118b4cd693044d9e85959d2318fcbbf4
+

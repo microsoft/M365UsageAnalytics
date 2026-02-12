@@ -1,0 +1,301 @@
+table 'Organization Measures LL'
+	lineageTag: 63d31ea6-801a-4863-8448-7812b4bd806d
+
+	measure '# of Users' = ```
+			
+			VAR CurrentTier = SELECTEDVALUE('Tier Reference'[Tier])
+			VAR SelectedActivity = SELECTEDVALUE('Activity Type'[Activity], "Overall M365 Activity")
+			RETURN
+			IF(
+			    NOT(ISBLANK(CurrentTier)),
+			    SWITCH(
+			        SelectedActivity,
+			        "Overall M365 Activity", 
+			            COUNTROWS(
+			                FILTER(
+			                    'SecDemEntraUsers',
+			                    [M365 All Apps Tier V2] = CurrentTier
+			                )
+			            ),
+			        "Teams Activity", 
+			            COUNTROWS(
+			                FILTER(
+			                    'SecDemEntraUsers',
+			                    [Teams Tier v2] = CurrentTier
+			                )
+			            ),
+			        "Email Activity", 
+			            COUNTROWS(
+			                FILTER(
+			                    'SecDemEntraUsers',
+			                    [Outlook Tier v2] = CurrentTier
+			                )
+			            ),
+			        "Word Activity", 
+			            COUNTROWS(
+			                FILTER(
+			                    'SecDemEntraUsers',
+			                    [Word Tier V2] = CurrentTier
+			                )
+			            ),
+			        "Excel Activity", 
+			            COUNTROWS(
+			                FILTER(
+			                    'SecDemEntraUsers',
+			                    [Excel Tier V2] = CurrentTier
+			                )
+			            ),
+			          "PPT Activity", 
+			            COUNTROWS(
+			                FILTER(
+			                    'SecDemEntraUsers',
+			                    [PowerPoint Tier V2] = CurrentTier
+			                )
+			            ),    
+			        BLANK()
+			    ),
+			    BLANK()
+			)
+			```
+		formatString: 0
+		lineageTag: b164015a-67e1-40f5-a386-1b88d1ce7d74
+
+	measure '% of Users' =
+			
+			DIVIDE([# of Users], [Total Users in Context], 0)
+		lineageTag: e61bff0f-9d48-4100-95fb-1d74fc26115e
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Total Teams Activity' =
+			
+			SUMX(
+			    'SecDemEntraUsers',
+			    [Teams Activity Sum V2]
+			)
+		formatString: 0
+		lineageTag: 547d2536-a7e0-4003-a7b3-2bf702a7c87d
+
+	measure 'Total Email Activity' =
+			
+			SUMX(
+			    'SecDemEntraUsers',
+			    [Outlook Activity Sum V2]
+			)
+		formatString: 0
+		lineageTag: 77c423b9-c0d6-432a-99c2-b5e0f9e686c8
+
+	measure 'Total Word Activity' =
+			
+			SUMX(
+			    'SecDemEntraUsers',
+			    [Word Activity Count v2]
+			)
+		formatString: 0
+		lineageTag: 6eea393b-a12c-4be2-b567-cbde44c7b4c5
+
+	measure 'Total Excel Activity' =
+			
+			SUMX(
+			    'SecDemEntraUsers',
+			    [Excel Activity Count V2]
+			)
+		formatString: 0
+		lineageTag: 89a613f1-9781-4876-a600-1d993334e691
+
+	measure 'Total Users in Context' =
+			
+			CALCULATE(
+			    COUNTROWS('SecDemEntraUsers'),
+			    ALL('Tier Reference')
+			)
+		formatString: 0
+		lineageTag: c17b855e-5944-4e78-a08f-14ee6f2a7a56
+
+	measure 'Total Activity in Context' = ```
+			
+			[Total Teams Activity] +
+			[Total Email Activity] +
+			[Total Word Activity] +
+			[Total Excel Activity] +
+			[Total PPT Activity]
+			
+			
+			```
+		formatString: 0
+		lineageTag: a48d576e-e1b8-4224-8d58-4553d92e3e20
+
+	measure '% of Activity' =
+			
+			DIVIDE([Activity by Application], [Total Activity in Context], 0)
+		lineageTag: 79943345-fdbb-4903-9139-5651659aeced
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Users by Tier' =
+			
+			COUNTROWS(
+			    FILTER(
+			        'SecDemEntraUsers',
+			        [M365 All Apps Tier V2] IN {1, 2, 3}
+			        && [M365 All Apps Tier V2] = SELECTEDVALUE('Tier Reference'[Tier])
+			    )
+			)
+		formatString: 0
+		lineageTag: 0f8f7779-93f2-4426-a8fc-5b2e4c4d1d06
+
+	measure 'Users by Tier (Chart)' =
+			
+			CALCULATE(
+			    [Users by Tier], // Your existing measure
+			    'Tier Reference'[ShowInChart] = 1
+			)
+		formatString: 0
+		lineageTag: 67b35960-0c96-4808-9760-f428c4f8440a
+
+	measure 'Total Users in Tiers 1-3' =
+			
+			VAR SelectedActivity = SELECTEDVALUE('Activity Type'[Activity], "Overall M365 Activity")
+			RETURN
+			    CALCULATE(
+			        COUNTROWS('SecDemEntraUsers'),
+			        FILTER(
+			            'SecDemEntraUsers',
+			            SWITCH(
+			                SelectedActivity,
+			                "Overall M365 Activity", [M365 All Apps Tier V2] IN {1,2,3},
+			                "Teams Activity", [Teams Tier v2] IN {1,2,3},
+			                "Ooutlook Activity", [Outlook Tier v2] IN {1,2,3},
+			                "WordActivity", [Word Tier V2] IN {1,2,3},
+			                "Excel Activity", [Excel Tier V2] IN {1,2,3},
+			                "PPT Activity", [PowerPoint Tier V2] IN {1,2,3},
+			                FALSE()
+			            )
+			        )
+			    )
+		formatString: 0
+		lineageTag: 7ddf9ab3-24e1-4f92-9e3c-8706699914f1
+
+	measure 'Total PPT Activity' =
+			
+			SUMX(
+			    'SecDemEntraUsers',
+			    [PowerPoint Activity Count V2]
+			)
+		formatString: 0
+		lineageTag: 0646fd0a-2c20-44dc-a98b-88cf908d8328
+
+	measure 'Selected Organizational View' = ```
+			
+			VAR SelectedView = SELECTEDVALUE('View By (Organisational Data) LL'[View By (Organisational Data) Order])
+			VAR Result = 
+			    SWITCH(
+			        SelectedView,
+			        "department", SELECTEDVALUE('SecDemEntraUsers'[department]),
+			        "Country", SELECTEDVALUE('SecDemEntraUsers'[country]),
+			        "JobTitle", SELECTEDVALUE('SecDemEntraUsers'[jobTitle]),
+			        "All"
+			    )
+			RETURN Result
+			```
+		formatString: 0
+		lineageTag: 568ec8a8-293e-4819-abac-9fc29e16e1e6
+
+	measure '% of User Distribution by Priority' = ```
+			
+			VAR TotalUsers = 
+			    CALCULATE(
+			        DISTINCTCOUNT('SecDemoM365Usage'[UserId]),
+			        ALLSELECTED('SecDemoM365Usage')
+			    )
+			VAR UsersInCurrentContext = 
+			    DISTINCTCOUNT('SecDemoM365Usage'[UserId])
+			RETURN
+			    DIVIDE(UsersInCurrentContext, TotalUsers, 0)
+			```
+		lineageTag: 8044f759-cb33-42dd-9685-145426b2db34
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Active Copilot Users' = ```
+			
+			CALCULATE(
+			    DISTINCTCOUNT('SecDemoM365Usage'[UserId]),
+			    'SecDemoM365Usage'[Workload] = "Copilot" || 
+			    CONTAINSSTRING('SecDemoM365Usage'[Operation], "CopilotInteraction")
+			)
+			```
+		formatString: 0
+		lineageTag: a0f20733-e2fe-48f4-80fb-e1fbdeb6a997
+
+	measure 'Copilot Licensed Users' =
+			
+			CALCULATE(
+			    DISTINCTCOUNT(SecDemEntraUsers[userPrincipalName]),
+			    SecDemEntraUsers[hasLicense] = TRUE
+			)
+		formatString: 0
+		lineageTag: e1e5e95b-249d-4d18-9893-9dfe79363742
+
+	measure 'Licensed Users Active Days' = ```
+			
+			AVERAGEX(
+			    FILTER(
+			        'M365 ActiveDaysSummary', 
+			        LOOKUPVALUE(
+			            SecDemEntraUsers[hasLicense],
+			            SecDemEntraUsers[userPrincipalName], 
+			            'M365 ActiveDaysSummary'[UserId]
+			        ) = TRUE
+			    ),
+			    'M365 ActiveDaysSummary'[TeamsActiveDays] + 
+			    'M365 ActiveDaysSummary'[OutlookActiveDays] + 
+			    'M365 ActiveDaysSummary'[WordActiveDays] + 
+			    'M365 ActiveDaysSummary'[ExcelActiveDays] + 
+			    'M365 ActiveDaysSummary'[PowerPointActiveDays]
+			)
+			```
+		lineageTag: e493b9dc-1513-4282-be23-857f0ad909e9
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Unlicensed Users Active Days' = ```
+			
+			AVERAGEX(
+			    FILTER(
+			        'M365 ActiveDaysSummary', 
+			        LOOKUPVALUE(
+			            SecDemEntraUsers[hasLicense],
+			            SecDemEntraUsers[userPrincipalName], 
+			            'M365 ActiveDaysSummary'[UserId]
+			        ) = FALSE
+			    ),
+			    'M365 ActiveDaysSummary'[TeamsActiveDays] + 
+			    'M365 ActiveDaysSummary'[OutlookActiveDays] + 
+			    'M365 ActiveDaysSummary'[WordActiveDays] + 
+			    'M365 ActiveDaysSummary'[ExcelActiveDays] + 
+			    'M365 ActiveDaysSummary'[PowerPointActiveDays]
+			)
+			```
+		lineageTag: f82cf3db-11da-49a6-ac98-09d9cf940188
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Value
+		isHidden
+		formatString: 0
+		lineageTag: 53e3cb29-2a69-40e4-9ac6-efe8a8977a8a
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Organization Measures LL' = calculated
+		mode: import
+		source = Row("Value", BLANK())
+
+	annotation PBI_Id = baed1d35eb1447c5bba44e93d0744e79
+
+	annotation 436ba87b-9c83-4389-a31b-ebd06a36be98 = {"Expression":""}
+

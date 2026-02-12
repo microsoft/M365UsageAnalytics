@@ -1,0 +1,39 @@
+table 'CE Quadrant Selection'
+	lineageTag: aa11bb22-cc33-dd44-ee55-ff6677889900
+
+	column QuadrantName
+		dataType: string
+		lineageTag: bb22cc33-dd44-ee55-ff66-778899001122
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [QuadrantName]
+		sortByColumn: SortOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	column SortOrder
+		isHidden
+		formatString: 0
+		lineageTag: cc33dd44-ee55-ff66-7788-990011223344
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [SortOrder]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'CE Quadrant Selection' = calculated
+		mode: import
+		source =
+				DATATABLE(
+				    "QuadrantName", STRING,
+				    "SortOrder", INTEGER,
+				    {
+				        {"Enablement Targets", 1},
+				        {"Champions", 2},
+				        {"AI-First", 3},
+				        {"Low Engagement", 4}
+				    }
+				)
+
+	annotation PBI_Id = ce03quadrantselection001
+

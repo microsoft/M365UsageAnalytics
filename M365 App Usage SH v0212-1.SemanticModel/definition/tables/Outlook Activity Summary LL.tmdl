@@ -1,0 +1,113 @@
+table 'Outlook Activity Summary LL'
+	lineageTag: f4e792c1-da01-446b-aa01-54029f71c334
+
+	column UserId
+		lineageTag: 985eca47-f5fb-410d-98ca-36031c290a58
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: SecDemoM365Usage[UserId]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Send Count'
+		formatString: 0
+		lineageTag: eab85211-83e3-4c74-bd8d-110c3bc267f4
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Send Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'MailItemsAccessed Count'
+		formatString: 0
+		lineageTag: 7d72a27a-af24-440f-af23-69bd322f73c7
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [MailItemsAccessed Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Total Outlook Activity Count'
+		formatString: 0
+		lineageTag: 4051eea2-2b80-4644-b449-68f64f0b3612
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Total Outlook Activity Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Outlook Tier' =
+			
+			VAR RawScore = [Total Outlook Activity Count]
+			VAR P90 = PERCENTILEX.INC(
+			    FILTER(ALL('Outlook Activity Summary LL'), NOT(ISBLANK([Total Outlook Activity Count]))),
+			    [Total Outlook Activity Count],
+			    0.9
+			)
+			VAR P75 = PERCENTILEX.INC(
+			    FILTER(ALL('Outlook Activity Summary LL'), NOT(ISBLANK([Total Outlook Activity Count]))),
+			    [Total Outlook Activity Count],
+			    0.75
+			)
+			VAR P50 = PERCENTILEX.INC(
+			    FILTER(ALL('Outlook Activity Summary LL'), NOT(ISBLANK([Total Outlook Activity Count]))),
+			    [Total Outlook Activity Count],
+			    0.5
+			)
+			RETURN
+			IF(
+			    ISBLANK(RawScore) || RawScore = 0,
+			    BLANK(),
+			    SWITCH(
+			        TRUE(),
+			        RawScore >= P90, 1,
+			        RawScore >= P75, 2,
+			        RawScore >= P50, 3,
+			        4
+			    )
+			)
+		formatString: 0
+		lineageTag: d5a22f35-e296-4b8e-906b-b6086accba4b
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Outlook Tier Label' =
+			
+			SWITCH(
+			    [Outlook Tier],
+			    1, "Tier 1 (Top 10%)",
+			    2, "Tier 2 (10-25%)",
+			    3, "Tier 3 (25-50%)",
+			    4, "Tier 4 (Remaining 50%)",
+			    BLANK()
+			)
+		lineageTag: 5c394236-a180-4e5d-a130-8e36d6cf38ee
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Outlook Activity Summary LL' = calculated
+		mode: import
+		source = ```
+				
+				SUMMARIZE (
+				    FILTER(SecDemoM365Usage, SecDemoM365Usage[Workload] = "Exchange"),
+				    [UserId],
+				    "Send Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "Send"
+				        ),
+				    "MailItemsAccessed Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "MailItemsAccessed"
+				        ),
+				
+				    "Total Outlook Activity Count", COUNTROWS(SecDemoM365Usage)
+				)
+				```
+
+	annotation PBI_Id = 2c7e9d5aaf8747febee35ec7ba96bd29
+

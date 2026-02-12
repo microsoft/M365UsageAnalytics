@@ -1,0 +1,47 @@
+table 'Priority Filter'
+	lineageTag: c583e0e0-207e-4530-bc3d-181cf6609576
+
+	column PriorityOrder
+		formatString: 0
+		lineageTag: b59ed86c-4d96-41ee-a478-65abe509d13b
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [PriorityOrder]
+
+		annotation SummarizationSetBy = Automatic
+
+	column PriorityName
+		lineageTag: 9ad0ea56-8352-4ab5-bd1f-0382fcf06a2e
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [PriorityName]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Priority
+		lineageTag: 1893ee9f-fc23-4a13-9219-ef403a0439d0
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Priority]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Priority Filter' = calculated
+		mode: import
+		source =
+				
+				DATATABLE(
+				    "PriorityOrder", INTEGER,
+				    "PriorityName", STRING,
+				    "Priority", STRING,
+				    {
+				        {1, "Critical", "🔴 Critical"},
+				        {2, "High", "🟠 High"},
+				        {3, "Medium", "🟡 Medium"},
+				        {4, "Promoter", "🟢 Promoter"},
+				        {5, "Low", "⚪ Low"}
+				    }
+				)
+
+	annotation PBI_Id = 7d3d79144fe045f48d1619f1f29cb0c6
+

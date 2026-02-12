@@ -1,0 +1,90 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "1169d8e3c661ec0069bd",
+  "position": {
+    "x": 0,
+    "y": 578.24081981212646,
+    "z": 18000,
+    "height": 142.10076857386849,
+    "width": 203.31340734415031,
+    "tabOrder": 18000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Priority List"
+                    }
+                  },
+                  "Property": "Priority"
+                }
+              },
+              "queryRef": "Priority List.Priority",
+              "nativeQueryRef": "Priority"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "SecDemoM365Usage"
+                    }
+                  },
+                  "Property": "Users by Priority Table"
+                }
+              },
+              "queryRef": "SecDemoM365Usage.Users by Priority Table",
+              "nativeQueryRef": "Users",
+              "displayName": "Users"
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "total": [
+        {
+          "properties": {
+            "totals": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'All Users'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

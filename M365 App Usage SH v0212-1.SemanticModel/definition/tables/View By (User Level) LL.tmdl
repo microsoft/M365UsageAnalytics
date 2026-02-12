@@ -1,0 +1,46 @@
+table 'View By (User Level) LL'
+	lineageTag: 0a24525c-64cd-4319-8d7f-6c36963e6d32
+
+	column 'View By'
+		lineageTag: 0f7f4f6a-be85-4dd5-9bef-a7a21b4581cc
+		summarizeBy: none
+		sourceColumn: [Value1]
+		sortByColumn: 'View By Order'
+
+		relatedColumnDetails
+			groupByColumn: 'View By Fields'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'View By Fields'
+		lineageTag: dbfb16df-6638-437d-9ded-6b7ab490706c
+		summarizeBy: none
+		sourceColumn: [Value2]
+		sortByColumn: 'View By Order'
+
+		extendedProperty ParameterMetadata =
+				{
+				  "version": 3,
+				  "kind": 2
+				}
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'View By Order'
+		formatString: 0
+		lineageTag: 946b5474-2318-4d30-addb-759a931dc196
+		summarizeBy: sum
+		sourceColumn: [Value3]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'View By (User Level) LL' = calculated
+		mode: import
+		source =
+				{
+				    ("UserPrincipalName", NAMEOF('SecDemEntraUsers'[userPrincipalName]), 0),
+				    ("Mail", NAMEOF('SecDemEntraUsers'[mail]), 1)
+				}
+
+	annotation PBI_Id = fe4077b10306469c91175aaf88515145
+

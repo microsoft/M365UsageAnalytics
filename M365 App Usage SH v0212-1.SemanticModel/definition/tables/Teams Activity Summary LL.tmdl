@@ -1,0 +1,140 @@
+table 'Teams Activity Summary LL'
+	lineageTag: 5fbf373c-532c-4700-a7fc-47f9ba0bc07a
+
+	column UserId
+		lineageTag: bd388c52-4f99-4675-9e27-db92043f37c7
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: SecDemoM365Usage[UserId]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Message Sent Count'
+		formatString: 0
+		lineageTag: 8207de6e-0acc-495a-92c6-35ea45cc26c8
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Message Sent Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Message Read Count'
+		formatString: 0
+		lineageTag: 16d4d98a-1a34-4c04-8365-2e03d4657d4b
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Message Read Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Meeting Joined Count'
+		formatString: 0
+		lineageTag: ecf67437-d02f-4f57-8697-8f016e6ee957
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Meeting Joined Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Teams Other Operations Count'
+		formatString: 0
+		lineageTag: 8d63c87b-e26c-4d0f-a769-df1036d2fa5b
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Teams Other Operations Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Teams Total Activity'
+		formatString: 0
+		lineageTag: fda6f592-43c7-4da1-8b18-0237ac63c84e
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Teams Total Activity]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Teams Tier' =
+			
+			VAR RawScore = [Teams Total Activity]
+			VAR P90 = PERCENTILEX.INC(
+			    FILTER(ALL('Teams Activity Summary LL'), NOT(ISBLANK([Teams Total Activity]))),
+			    [Teams Total Activity],
+			    0.9
+			)
+			VAR P75 = PERCENTILEX.INC(
+			    FILTER(ALL('Teams Activity Summary LL'), NOT(ISBLANK([Teams Total Activity]))),
+			    [Teams Total Activity],
+			    0.75
+			)
+			VAR P50 = PERCENTILEX.INC(
+			    FILTER(ALL('Teams Activity Summary LL'), NOT(ISBLANK([Teams Total Activity]))),
+			    [Teams Total Activity],
+			    0.5
+			)
+			RETURN
+			IF(
+			    ISBLANK(RawScore) || RawScore = 0,
+			    BLANK(),
+			    SWITCH(
+			        TRUE(),
+			        RawScore >= P90, 1,
+			        RawScore >= P75, 2,
+			        RawScore >= P50, 3,
+			        4
+			    )
+			)
+		formatString: 0
+		lineageTag: e6ea0e94-950f-40c0-b986-1b274418c20d
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Teams Tier Label' =
+			
+			SWITCH(
+			    [Teams Tier],
+			    1, "Tier 1 (Top 10%)",
+			    2, "Tier 2 (10-25%)",
+			    3, "Tier 3 (25-50%)",
+			    4, "Tier 4 (Remaining 50%)",
+			    BLANK()
+			)
+		lineageTag: 31572325-0656-428c-a132-9501e80b21ac
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Teams Activity Summary LL' = calculated
+		mode: import
+		source = ```
+				
+				SUMMARIZE (
+				    FILTER(SecDemoM365Usage, SecDemoM365Usage[Workload] = "MicrosoftTeams"),
+				    [UserId],
+				    "Message Sent Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "MessageSent"
+				        ),
+				    "Message Read Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "MessageRead"
+				        ),
+				    "Meeting Joined Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "MeetingParticipantJoined"
+				        ),
+				    "Teams Other Operations Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            NOT(SecDemoM365Usage[Operation] IN { "MessageSent", "MessageRead", "MeetingParticipantJoined" })
+				        ),
+				    "Teams Total Activity", COUNTROWS(SecDemoM365Usage)
+				)
+				```
+
+	annotation PBI_Id = aeb53924e63942218c1ae1b1d2a99fc3
+

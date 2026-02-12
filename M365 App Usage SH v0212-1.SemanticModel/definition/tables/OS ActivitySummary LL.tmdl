@@ -1,0 +1,117 @@
+table 'OS ActivitySummary LL'
+	lineageTag: f899ad5c-f185-4425-8925-09f072eb48f4
+
+	column UserId
+		lineageTag: c808040d-0315-4e41-ad2f-33762aaa7ee5
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: SecDemoM365Usage[UserId]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Windows Activity Count'
+		formatString: 0
+		lineageTag: 2d3898d4-a2c3-4bca-96a4-ff21cbe81af3
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Windows Activity Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Mac Activity Count'
+		formatString: 0
+		lineageTag: 45f534f8-65f0-49f3-8d47-3bc760fe3178
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Mac Activity Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'iOS Activity Count'
+		formatString: 0
+		lineageTag: 5c62e5ed-d23c-493e-bece-e8d2b2047192
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [iOS Activity Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Android Activity Count'
+		formatString: 0
+		lineageTag: 9285873c-d9b3-4b80-a34e-6bd7cf4e750a
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Android Activity Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Linux Activity Count'
+		formatString: 0
+		lineageTag: 60f15808-c493-4c2a-a1b1-f0fc5de171dc
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Linux Activity Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Other OS Activity Count'
+		formatString: 0
+		lineageTag: a3d8db9e-ab3b-4e07-9526-96b8f749c3a0
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Other OS Activity Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Total Activity Count'
+		formatString: 0
+		lineageTag: 52b6f3c2-de78-43ad-aa50-e043cc77325c
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Total Activity Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'OS ActivitySummary LL' = calculated
+		mode: import
+		source = ```
+				
+				SUMMARIZE (
+				    SecDemoM365Usage,
+				    [UserId],
+				    "Windows Activity Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[DeviceProperties.OS] IN { "Windows", "Windows10" }
+				        ),
+				    "Mac Activity Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[DeviceProperties.OS] IN { "Mac", "MacOS" }
+				        ),
+				    "iOS Activity Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[DeviceProperties.OS] = "iOS"
+				        ),
+				    "Android Activity Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[DeviceProperties.OS] = "Android"
+				        ),
+				    "Linux Activity Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[DeviceProperties.OS] = "Linux"
+				        ),
+				    "Other OS Activity Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            NOT(SecDemoM365Usage[DeviceProperties.OS] IN { "Windows", "Windows10", "Mac", "MacOS", "iOS", "Android", "Linux" })
+				        ),
+				    "Total Activity Count", COUNTROWS(SecDemoM365Usage)
+				)
+				```
+
+	annotation PBI_Id = f701acbc1179434bb550cbb4e11fd475
+

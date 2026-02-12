@@ -1,0 +1,28 @@
+table 'Activity Type'
+	lineageTag: 3e9b635c-795a-43ce-9505-8e7696f336b9
+
+	column Activity
+		lineageTag: 678c3900-af9c-40e7-a944-ad1f3fec89f5
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Activity]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Activity Type' = calculated
+		mode: import
+		source =
+				
+				DATATABLE(
+				    "Activity", STRING,
+				    {
+				        {"Overall M365 Activity"},
+				        {"Teams Activity"},
+				        {"Email Activity"},
+				        {"OneDrive Activity"},
+				        {"SharePoint Activity"}
+				    }
+				)
+
+	annotation PBI_Id = 654c0a0bfad54695bc0afbace090b53a
+

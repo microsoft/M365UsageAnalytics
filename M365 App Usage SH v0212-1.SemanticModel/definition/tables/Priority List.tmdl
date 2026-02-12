@@ -1,0 +1,23 @@
+table 'Priority List'
+	lineageTag: 1593b73c-30de-4779-85b9-1099e29eb438
+
+	column Priority
+		dataType: string
+		lineageTag: 0a9ebf89-122c-4822-9e34-999cebf646bf
+		summarizeBy: none
+		sourceColumn: Priority
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Priority List' = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i45W+jB/yhYF56LMkszkxBylWB2QyPwFCh6Z6Rkw3kIF39SUzNJcGH+RQkBRfm5+SWoRWOTRrFUKPvnlSrGxAA==", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [Column1 = _t]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Column1", type text}}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Changed Type",{{"Column1", "Priority"}})
+				in
+				    #"Renamed Columns"
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,103 @@
+table 'BrowserActivitySummary LL'
+	lineageTag: d372cca7-d769-4a35-ba21-7c5dfd6b38f4
+
+	column UserId
+		lineageTag: 2673aabc-5dca-4c8f-807d-4bf9d0f102be
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: SecDemoM365Usage[UserId]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Edge Activity Count'
+		formatString: 0
+		lineageTag: da07ab77-e0bf-4348-a3aa-4f482e3638e7
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Edge Activity Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Chrome Activity Count'
+		formatString: 0
+		lineageTag: b7d2c3fd-8c36-4b45-9bfc-f5389890c433
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Chrome Activity Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Safari Activity Count'
+		formatString: 0
+		lineageTag: db0a9217-e66b-484f-ba71-42e4b06d6573
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Safari Activity Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Firefox Activity Count'
+		formatString: 0
+		lineageTag: 2492100a-0181-418e-acc4-c3945264d578
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Firefox Activity Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Other Browser Activity Count'
+		formatString: 0
+		lineageTag: fb93e4d6-c45f-45a2-b44f-5b32793d2a70
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Other Browser Activity Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Total Activity Count'
+		formatString: 0
+		lineageTag: e92bb32d-a2ee-48f2-bf12-c16eb31c6942
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Total Activity Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'BrowserActivitySummary LL' = calculated
+		mode: import
+		source = ```
+				
+				SUMMARIZE (
+				    SecDemoM365Usage,
+				    [UserId],
+				    "Edge Activity Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[DeviceProperties.BrowserType] = "Edge"
+				        ),
+				    "Chrome Activity Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[DeviceProperties.BrowserType] = "Chrome"
+				        ),
+				    "Safari Activity Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[DeviceProperties.BrowserType] = "Safari"
+				        ),
+				    "Firefox Activity Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[DeviceProperties.BrowserType] = "Firefox"
+				        ),
+				    "Other Browser Activity Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            NOT(SecDemoM365Usage[DeviceProperties.BrowserType] IN { "Edge", "Chrome", "Safari", "Firefox" })
+				        ),
+				    "Total Activity Count", COUNTROWS(SecDemoM365Usage)
+				)
+				```
+
+	annotation PBI_Id = 99faa8f053694bcdb056e54d615e10b0
+

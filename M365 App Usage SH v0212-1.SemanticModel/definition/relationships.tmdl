@@ -1,0 +1,101 @@
+relationship e3f3f333-fd53-42cf-94a7-5b4b0fa3ff1a
+	joinOnDateBehavior: datePartOnly
+	fromColumn: SecDemEntraUsers.employeeHireDate
+	toColumn: LocalDateTable_97bc1be7-5652-4d44-87d3-98dafa6fc648.Date
+
+relationship 310727cd-d4b8-9f77-4440-7e24b5ad327f
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: M365AppActivitySummary_LL.UserId
+	toColumn: SecDemEntraUsers.userPrincipalName
+
+relationship 30397656-464a-621e-baa8-a5d453a19539
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: 'BrowserActivitySummary LL'.UserId
+	toColumn: SecDemEntraUsers.userPrincipalName
+
+relationship d14dd326-dc89-1630-8ccf-4fabef66069e
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: 'Word Activity Summary LL'.UserId
+	toColumn: SecDemEntraUsers.userPrincipalName
+
+relationship 95d481d5-6b7a-7e56-e9f1-467cc54200dd
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: 'Excel Activity Summary LL'.UserId
+	toColumn: SecDemEntraUsers.userPrincipalName
+
+relationship cd4cb6bc-b1bc-77cd-1c37-0d3897d7f746
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: 'PowerPoint Activity Summary LL'.UserId
+	toColumn: SecDemEntraUsers.userPrincipalName
+
+relationship 3fc60f79-4a61-6c3f-958a-17bc01695922
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: 'SharePoint Activity Summary LL'.UserId
+	toColumn: 'PowerPoint Activity Summary LL'.UserId
+
+relationship f36c6f11-9905-fb05-5489-be3a3c0635e9
+	isActive: false
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: 'SharePoint Activity Summary LL'.UserId
+	toColumn: SecDemEntraUsers.userPrincipalName
+
+relationship 844edcb3-ec52-62f4-ecc9-28958f4bd7b3
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: 'Word Activity by App Summary LL'.UserId
+	toColumn: SecDemEntraUsers.userPrincipalName
+
+relationship 9d122929-b064-90cb-fe64-9a5447c542ca
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: 'PowerPoint Activity by App Summary LL'.UserId
+	toColumn: SecDemEntraUsers.userPrincipalName
+
+relationship 3bf9d2b2-44cf-4fca-94b5-b9cb49b292e5
+	joinOnDateBehavior: datePartOnly
+	fromColumn: Last30Days.'Last Activity Date'
+	toColumn: LocalDateTable_fc70000c-1411-4fa5-b7f0-d2873856f952.Date
+
+relationship 43abc25e-8b97-408c-881e-55302cea799f
+	joinOnDateBehavior: datePartOnly
+	fromColumn: SecDemoM365Usage.CreationDate
+	toColumn: LocalDateTable_522ea86a-24e9-4ff9-aab0-99205813ddbc.Date
+
+relationship db8bbc02-5fd1-43ff-9a00-55ce5fc4f1ce
+	joinOnDateBehavior: datePartOnly
+	fromColumn: SecDemoM365Usage.CreationTime
+	toColumn: LocalDateTable_8bffc73f-7959-42fd-982b-1a5268b8a10f.Date
+
+relationship f78a7b8e-327c-47ce-afa0-7e6e84e7f324
+	joinOnDateBehavior: datePartOnly
+	fromColumn: SecDemoM365Usage.'AppAccessContext.AuthTime'
+	toColumn: LocalDateTable_a18699e4-8385-411f-b3b9-4eb7de0bfd3b.Date
+
+relationship 61124c7f-fa50-49a0-be34-2f1171cd465f
+	joinOnDateBehavior: datePartOnly
+	fromColumn: SecDemoM365Usage.'AppAccessContext.TokenIssuedAtTime'
+	toColumn: LocalDateTable_9c82cff0-40c9-442c-b6da-e60968f6f948.Date
+
+relationship 4f744b0e-f60f-440c-855e-94c76a29c6ea
+	joinOnDateBehavior: datePartOnly
+	fromColumn: SecDemoM365Usage.'AppAccessContext.IssuedAtTime'
+	toColumn: LocalDateTable_4059ae2b-73ff-428f-90f0-74fa2393abd6.Date
+
+relationship 5e9328d7-9e0d-3b2a-962e-aaf95a2a8202
+	crossFilteringBehavior: bothDirections
+	fromColumn: SecDemoM365Usage.UserId
+	toColumn: SecDemEntraUsers.userPrincipalName
+
+relationship 093d01a9-afc9-c93b-26de-8437c168bdcc
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: 'Outlook Activity Summary LL'.UserId
+	toColumn: SecDemEntraUsers.userPrincipalName
+

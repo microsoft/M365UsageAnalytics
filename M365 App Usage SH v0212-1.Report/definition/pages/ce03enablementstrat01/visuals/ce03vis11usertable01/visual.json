@@ -1,0 +1,324 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "ce03vis11usertable01",
+  "position": {
+    "x": 32.097264437689972,
+    "y": 286.93009118541033,
+    "z": 11000,
+    "height": 417.26443768996961,
+    "width": 940,
+    "tabOrder": 11000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "SecDemEntraUsers"
+                    }
+                  },
+                  "Property": "userPrincipalName"
+                }
+              },
+              "queryRef": "SecDemEntraUsers.userPrincipalName",
+              "nativeQueryRef": "User",
+              "displayName": "User"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "SecDemEntraUsers"
+                    }
+                  },
+                  "Property": "department"
+                }
+              },
+              "queryRef": "SecDemEntraUsers.department",
+              "nativeQueryRef": "Department",
+              "displayName": "Department"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Copilot Measures"
+                    }
+                  },
+                  "Property": "CE Quadrant"
+                }
+              },
+              "queryRef": "Copilot Measures.CE Quadrant",
+              "nativeQueryRef": "Quadrant",
+              "displayName": "Quadrant"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Copilot Measures"
+                    }
+                  },
+                  "Property": "CE App Percentile"
+                }
+              },
+              "queryRef": "Copilot Measures.CE App Percentile",
+              "nativeQueryRef": "App Activity %",
+              "displayName": "App Activity %"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Copilot Measures"
+                    }
+                  },
+                  "Property": "CE Copilot Percentile"
+                }
+              },
+              "queryRef": "Copilot Measures.CE Copilot Percentile",
+              "nativeQueryRef": "Copilot Use %",
+              "displayName": "Copilot Use %"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Copilot Measures"
+                  }
+                },
+                "Property": "CE App Percentile"
+              }
+            },
+            "direction": "Descending"
+          }
+        ]
+      }
+    },
+    "objects": {
+      "columnHeaders": [
+        {
+          "properties": {
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'''Segoe UI Semibold'', wf_segoe-ui_semibold, helvetica, arial, sans-serif'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "9D"
+                }
+              }
+            },
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#F3F2F1'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "values": [
+        {
+          "properties": {
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "9D"
+                }
+              }
+            },
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'''Segoe UI'', wf_segoe-ui_normal, helvetica, arial, sans-serif'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "grid": [
+        {
+          "properties": {
+            "gridHorizontal": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "rowPadding": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
+                }
+              }
+            },
+            "gridHorizontalColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#F3F2F1'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "ce03filter04quadrant",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Copilot Measures"
+              }
+            },
+            "Property": "CE Is Selected Quadrant"
+          }
+        },
+        "type": "Advanced",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "c",
+              "Entity": "Copilot Measures",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "Comparison": {
+                  "ComparisonKind": 0,
+                  "Left": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Source": "c"
+                        }
+                      },
+                      "Property": "CE Is Selected Quadrant"
+                    }
+                  },
+                  "Right": {
+                    "Literal": {
+                      "Value": "1L"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User",
+        "isHiddenInViewMode": true
+      },
+      {
+        "name": "4fdac930b51a39ead38a",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "SecDemEntraUsers"
+              }
+            },
+            "Property": "userPrincipalName"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "c10182124cbbe04a534a",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "SecDemEntraUsers"
+              }
+            },
+            "Property": "department"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "7807b6d9f87c59692403",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Copilot Measures"
+              }
+            },
+            "Property": "CE App Percentile"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "2429204f3ceceb4287cd",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Copilot Measures"
+              }
+            },
+            "Property": "CE Copilot Percentile"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "ce9592775ae25d40a59a",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Copilot Measures"
+              }
+            },
+            "Property": "CE Quadrant"
+          }
+        },
+        "type": "Advanced"
+      }
+    ]
+  }
+}

@@ -1,0 +1,154 @@
+table 'PowerPoint Activity Summary LL'
+	lineageTag: 083e19f4-2c23-4ebf-a762-45aead00d1f8
+
+	column UserId
+		lineageTag: 1c05182a-c0eb-4c62-9800-607da0efb49a
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: SecDemoM365Usage[UserId]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'PowerPoint Viewed Count'
+		formatString: 0
+		lineageTag: af11fa35-0797-4d4b-8ad6-907dbfce1e44
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [PowerPoint Viewed Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'PowerPoint Modified Count'
+		formatString: 0
+		lineageTag: d3502dcf-1b03-46a7-a341-da468159cb2e
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [PowerPoint Modified Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'PowerPoint Downloaded Count'
+		formatString: 0
+		lineageTag: ee1e6982-698d-42bd-b125-f0847ec2bca6
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [PowerPoint Downloaded Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'PowerPoint Uploaded Count'
+		formatString: 0
+		lineageTag: aaf0db27-e072-49c5-8f31-189e72441535
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [PowerPoint Uploaded Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'PowerPoint Other Operations Count'
+		formatString: 0
+		lineageTag: f4673512-1c33-4803-ac07-c00be4bba8ea
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [PowerPoint Other Operations Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'PowerPoint Total Activity'
+		formatString: 0
+		lineageTag: eb454c97-ff64-4e08-8971-6a3f6782173f
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [PowerPoint Total Activity]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'PowerPoint Tier' =
+			
+			VAR RawScore = [PowerPoint Total Activity]
+			VAR P90 = PERCENTILEX.INC(
+			    FILTER(ALL('PowerPoint Activity Summary LL'), NOT(ISBLANK([PowerPoint Total Activity]))),
+			    [PowerPoint Total Activity],
+			    0.9
+			)
+			VAR P75 = PERCENTILEX.INC(
+			    FILTER(ALL('PowerPoint Activity Summary LL'), NOT(ISBLANK([PowerPoint Total Activity]))),
+			    [PowerPoint Total Activity],
+			    0.75
+			)
+			VAR P50 = PERCENTILEX.INC(
+			    FILTER(ALL('PowerPoint Activity Summary LL'), NOT(ISBLANK([PowerPoint Total Activity]))),
+			    [PowerPoint Total Activity],
+			    0.5
+			)
+			RETURN
+			IF(
+			    ISBLANK(RawScore) || RawScore = 0,
+			    BLANK(),
+			    SWITCH(
+			        TRUE(),
+			        RawScore >= P90, 1,
+			        RawScore >= P75, 2,
+			        RawScore >= P50, 3,
+			        4
+			    )
+			)
+		formatString: 0
+		lineageTag: 53d3517d-6612-4449-860b-0c2984dad6d2
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'PowerPoint Tier Label' =
+			
+			SWITCH(
+			    [PowerPoint Tier],
+			    1, "Tier 1 (Top 10%)",
+			    2, "Tier 2 (10-25%)",
+			    3, "Tier 3 (25-50%)",
+			    4, "Tier 4 (Remaining 50%)",
+			    BLANK()
+			)
+		lineageTag: 4a1cd651-7ec2-4b29-acac-9c431d91335b
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'PowerPoint Activity Summary LL' = calculated
+		mode: import
+		source = ```
+				
+				SUMMARIZE (
+				    FILTER(SecDemoM365Usage, LOWER(SecDemoM365Usage[SourceFileExtension]) IN { "pptx", "ppt", "ppsx" }),
+				    [UserId],
+				    "PowerPoint Viewed Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "FileViewed"
+				        ),
+				    "PowerPoint Modified Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "FileModified"
+				        ),
+				    "PowerPoint Downloaded Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "FileDownloaded"
+				        ),
+				    "PowerPoint Uploaded Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "FileUploaded"
+				        ),
+				    "PowerPoint Other Operations Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            NOT(SecDemoM365Usage[Operation] IN { "FileViewed", "FileModified", "FileDownloaded", "FileUploaded" })
+				        ),
+				    "PowerPoint Total Activity", COUNTROWS(SecDemoM365Usage)
+				)
+				```
+
+	annotation PBI_Id = efadfaf2623847eabcaab8648ec750fa
+

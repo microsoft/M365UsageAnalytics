@@ -1,0 +1,38 @@
+table 'Copilot Tiers'
+	lineageTag: 38969a27-d68e-4b65-acf2-5dc91c136ed8
+
+	column CopilotTierOrder
+		formatString: 0
+		lineageTag: 5e2e42ff-66c5-425d-8276-1060eabb55c2
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [CopilotTierOrder]
+
+		annotation SummarizationSetBy = Automatic
+
+	column CopilotTierName
+		lineageTag: 37f96e46-435e-499d-a0f6-fe904ad539d6
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [CopilotTierName]
+		sortByColumn: CopilotTierOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Copilot Tiers' = calculated
+		mode: import
+		source =
+				
+				DATATABLE(
+				    "CopilotTierOrder", INTEGER,
+				    "CopilotTierName", STRING,
+				    {
+				        {1, "Top 10 Copilot"},
+				        {2, "10-25 Copilot"},
+				        {3, "25-50 Copilot"},
+				        {4, "Bottom 50% Copilot"}
+				    }
+				)
+
+	annotation PBI_Id = 7a96b50cc2fe4b4191ef4441254a765c
+

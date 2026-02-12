@@ -1,0 +1,323 @@
+table SecDemEntraUsers
+	lineageTag: 6c7622bb-8a60-410f-90cc-4fbd4c0e5469
+
+	column userPrincipalName
+		dataType: string
+		lineageTag: 7499ee8a-170d-4bfa-a432-9305d56796f4
+		summarizeBy: none
+		sourceColumn: userPrincipalName
+
+		annotation SummarizationSetBy = Automatic
+
+	column displayName
+		dataType: string
+		lineageTag: 6544e987-ba8a-4374-81ed-8bab21b6afd4
+		summarizeBy: none
+		sourceColumn: displayName
+
+		annotation SummarizationSetBy = Automatic
+
+	column id
+		dataType: string
+		lineageTag: 214d26ad-9676-4d0d-a988-a1bb42136dee
+		summarizeBy: none
+		sourceColumn: id
+
+		annotation SummarizationSetBy = Automatic
+
+	column mail
+		dataType: string
+		lineageTag: 8178e042-a2be-47c7-b8ff-06ccbd7bca02
+		summarizeBy: none
+		sourceColumn: mail
+
+		annotation SummarizationSetBy = Automatic
+
+	column givenName
+		dataType: string
+		lineageTag: b2e97c7d-ac60-4fcf-b651-2c101d3851b1
+		summarizeBy: none
+		sourceColumn: givenName
+
+		annotation SummarizationSetBy = Automatic
+
+	column surname
+		dataType: string
+		lineageTag: 20f354d3-b774-424b-84e7-cfffd0d202bb
+		summarizeBy: none
+		sourceColumn: surname
+
+		annotation SummarizationSetBy = Automatic
+
+	column jobTitle
+		dataType: string
+		lineageTag: 7cc66523-0757-4c5b-8945-6cdc7df201b4
+		summarizeBy: none
+		sourceColumn: jobTitle
+
+		annotation SummarizationSetBy = Automatic
+
+	column department
+		dataType: string
+		lineageTag: 413b1236-66e9-420f-8834-b188de0c70b0
+		summarizeBy: none
+		sourceColumn: department
+
+		annotation SummarizationSetBy = Automatic
+
+	column employeeType
+		dataType: string
+		lineageTag: 6f3de5d7-591c-4791-8373-0ba9b3f14069
+		summarizeBy: none
+		sourceColumn: employeeType
+
+		annotation SummarizationSetBy = Automatic
+
+	column employeeId
+		dataType: string
+		lineageTag: 58389622-d090-4abd-ab02-9f79ac9b616a
+		summarizeBy: none
+		sourceColumn: employeeId
+
+		annotation SummarizationSetBy = Automatic
+
+	column employeeHireDate
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: c2597838-7e25-4760-b90b-3673b34ae63e
+		summarizeBy: none
+		sourceColumn: employeeHireDate
+
+		variation Variation
+			isDefault
+			relationship: e3f3f333-fd53-42cf-94a7-5b4b0fa3ff1a
+			defaultHierarchy: LocalDateTable_97bc1be7-5652-4d44-87d3-98dafa6fc648.'Date Hierarchy'
+
+		annotation SummarizationSetBy = Automatic
+
+	column officeLocation
+		dataType: string
+		lineageTag: 280df1bb-449c-4185-a645-cd598fdcd7d2
+		summarizeBy: none
+		sourceColumn: officeLocation
+
+		annotation SummarizationSetBy = Automatic
+
+	column city
+		dataType: string
+		lineageTag: 6ac8f3b0-4b05-4f26-82dc-3513a3c39e8e
+		summarizeBy: none
+		sourceColumn: city
+
+		annotation SummarizationSetBy = Automatic
+
+	column state
+		dataType: string
+		lineageTag: a568a49e-8625-4ec3-9f7a-3cab37f9e91d
+		summarizeBy: none
+		sourceColumn: state
+
+		annotation SummarizationSetBy = Automatic
+
+	column country
+		dataType: string
+		lineageTag: 8699be75-3034-4776-afc9-3e5dc177157f
+		summarizeBy: none
+		sourceColumn: country
+
+		annotation SummarizationSetBy = Automatic
+
+	column postalCode
+		dataType: string
+		lineageTag: d0e99fc4-d7d6-47ce-b100-7f9209311fb8
+		summarizeBy: none
+		sourceColumn: postalCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column companyName
+		dataType: string
+		lineageTag: 8c609925-6121-4f88-877f-525d77da743a
+		summarizeBy: none
+		sourceColumn: companyName
+
+		annotation SummarizationSetBy = Automatic
+
+	column employeeOrgData_division
+		dataType: string
+		lineageTag: 82446ed7-49ea-4bbb-b92b-cad30c337ba7
+		summarizeBy: none
+		sourceColumn: employeeOrgData_division
+
+		annotation SummarizationSetBy = Automatic
+
+	column employeeOrgData_costCenter
+		dataType: string
+		lineageTag: f95d8740-2bcd-4255-bc37-ed5c94930891
+		summarizeBy: none
+		sourceColumn: employeeOrgData_costCenter
+
+		annotation SummarizationSetBy = Automatic
+
+	column accountEnabled
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: c47828d5-08f3-4463-9901-dd2d7c1193c9
+		summarizeBy: none
+		sourceColumn: accountEnabled
+
+		annotation SummarizationSetBy = Automatic
+
+	column userType
+		dataType: string
+		lineageTag: e499e7fb-171f-4652-b4f5-f3f0e0855b2c
+		summarizeBy: none
+		sourceColumn: userType
+
+		annotation SummarizationSetBy = Automatic
+
+	column createdDateTime
+		dataType: string
+		lineageTag: 97bd99d0-9e22-41ee-a513-33d80f870103
+		summarizeBy: none
+		sourceColumn: createdDateTime
+
+		annotation SummarizationSetBy = Automatic
+
+	column usageLocation
+		dataType: string
+		lineageTag: 34aaac48-770d-449c-9a33-3469ef1c50bd
+		summarizeBy: none
+		sourceColumn: usageLocation
+
+		annotation SummarizationSetBy = Automatic
+
+	column preferredLanguage
+		dataType: string
+		lineageTag: 579b8a68-eb45-4e77-a9ae-f48334688230
+		summarizeBy: none
+		sourceColumn: preferredLanguage
+
+		annotation SummarizationSetBy = Automatic
+
+	column onPremisesSyncEnabled
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: cc159d84-a969-4b42-9f9b-52b2a41a02a6
+		summarizeBy: none
+		sourceColumn: onPremisesSyncEnabled
+
+		annotation SummarizationSetBy = Automatic
+
+	column onPremisesImmutableId
+		dataType: string
+		lineageTag: e7f58ad4-b1b5-4aa9-b30e-3e5094c4ec84
+		summarizeBy: none
+		sourceColumn: onPremisesImmutableId
+
+		annotation SummarizationSetBy = Automatic
+
+	column externalUserState
+		dataType: string
+		lineageTag: 9240cd79-710f-46dc-91b8-97185a5fe334
+		summarizeBy: none
+		sourceColumn: externalUserState
+
+		annotation SummarizationSetBy = Automatic
+
+	column proxyAddresses_Primary
+		dataType: string
+		lineageTag: c20cfe69-896a-4618-97eb-8aa6b7e43eee
+		summarizeBy: none
+		sourceColumn: proxyAddresses_Primary
+
+		annotation SummarizationSetBy = Automatic
+
+	column proxyAddresses_Count
+		dataType: int64
+		formatString: 0
+		lineageTag: b3179fde-30fd-40b7-a725-0ef8689bf88f
+		summarizeBy: sum
+		sourceColumn: proxyAddresses_Count
+
+		annotation SummarizationSetBy = Automatic
+
+	column proxyAddresses_All
+		dataType: string
+		lineageTag: c9c1217f-d804-46b5-a583-1945507cb401
+		summarizeBy: none
+		sourceColumn: proxyAddresses_All
+
+		annotation SummarizationSetBy = Automatic
+
+	column manager_id
+		dataType: string
+		lineageTag: 87ca7cee-0126-4dce-ab5b-504050533cae
+		summarizeBy: none
+		sourceColumn: manager_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column manager_displayName
+		dataType: string
+		lineageTag: b68b957a-4fbd-43e3-9bff-dea3652291af
+		summarizeBy: none
+		sourceColumn: manager_displayName
+
+		annotation SummarizationSetBy = Automatic
+
+	column manager_userPrincipalName
+		dataType: string
+		lineageTag: 5eacda99-7861-4ed4-bde4-475406cb36dc
+		summarizeBy: none
+		sourceColumn: manager_userPrincipalName
+
+		annotation SummarizationSetBy = Automatic
+
+	column manager_mail
+		dataType: string
+		lineageTag: 334d4500-d44f-453a-8cd3-4f2af0229a82
+		summarizeBy: none
+		sourceColumn: manager_mail
+
+		annotation SummarizationSetBy = Automatic
+
+	column manager_jobTitle
+		dataType: string
+		lineageTag: cdc9c989-2c0f-40c4-82a0-159afe855c05
+		summarizeBy: none
+		sourceColumn: manager_jobTitle
+
+		annotation SummarizationSetBy = Automatic
+
+	column assignedLicenses
+		dataType: string
+		lineageTag: 11d39c60-5b7a-4296-bed5-9b334eb48f7f
+		summarizeBy: none
+		sourceColumn: assignedLicenses
+
+		annotation SummarizationSetBy = Automatic
+
+	column hasLicense
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 3cd6f8c1-fa05-45df-86ff-b6ad2de890c7
+		summarizeBy: none
+		sourceColumn: hasLicense
+
+		annotation SummarizationSetBy = Automatic
+
+	partition SecDemEntraUsers = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(File.Contents("C:\Users\luzlorenz\Downloads\SecDemEntraUsers.csv"),[Delimiter=",", Columns=37, Encoding=1252, QuoteStyle=QuoteStyle.None]),
+				    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"userPrincipalName", type text}, {"displayName", type text}, {"id", type text}, {"mail", type text}, {"givenName", type text}, {"surname", type text}, {"jobTitle", type text}, {"department", type text}, {"employeeType", type text}, {"employeeId", type text}, {"employeeHireDate", type datetime}, {"officeLocation", type text}, {"city", type text}, {"state", type text}, {"country", type text}, {"postalCode", type text}, {"companyName", type text}, {"employeeOrgData_division", type text}, {"employeeOrgData_costCenter", type text}, {"accountEnabled", type logical}, {"userType", type text}, {"createdDateTime", type text}, {"usageLocation", type text}, {"preferredLanguage", type text}, {"onPremisesSyncEnabled", type logical}, {"onPremisesImmutableId", type text}, {"externalUserState", type text}, {"proxyAddresses_Primary", type text}, {"proxyAddresses_Count", Int64.Type}, {"proxyAddresses_All", type text}, {"manager_id", type text}, {"manager_displayName", type text}, {"manager_userPrincipalName", type text}, {"manager_mail", type text}, {"manager_jobTitle", type text}, {"assignedLicenses", type text}, {"hasLicense", type logical}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

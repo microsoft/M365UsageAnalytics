@@ -1,0 +1,26 @@
+table 'Excel Weight %'
+	lineageTag: da8e6ad5-006a-4999-b265-e14ce0321426
+
+	measure 'Excel Weight % Value' = SELECTEDVALUE('Excel Weight %'[Excel Weight %], 10)
+		formatString: 0
+		lineageTag: c29fb24b-48d9-4918-b122-4e041168b4e1
+
+	column 'Excel Weight %'
+		formatString: 0
+		lineageTag: 42520c7c-09ce-49e7-a282-648e93ff73e8
+		summarizeBy: none
+		sourceColumn: [Value]
+
+		extendedProperty ParameterMetadata =
+				{
+				  "version": 0
+				}
+
+		annotation SummarizationSetBy = User
+
+	partition 'Excel Weight %' = calculated
+		mode: import
+		source = GENERATESERIES(0, 100, 1)
+
+	annotation PBI_Id = 011ec8f70f0846e197ac61d26b7b3707
+

@@ -1,0 +1,11 @@
+{
+  "name": "Custom",
+  "textClasses": {
+    "callout": {
+      "fontFace": "'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif"
+    },
+    "title": {
+      "fontFace": "'Segoe UI Semibold', wf_segoe-ui_semibold, helvetica, arial, sans-serif"
+    }
+  }
+}

@@ -1,0 +1,182 @@
+table 'SharePoint Activity Summary LL'
+	lineageTag: e88f61db-e5a5-45f6-a648-bbb0b0e5062a
+
+	column UserId
+		lineageTag: 6502187b-213e-405e-a5d2-9ea17549da72
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: SecDemoM365Usage[UserId]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'FileAccessed Count'
+		formatString: 0
+		lineageTag: ea073cec-1367-40cc-9f85-64b57af6006c
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [FileAccessed Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'FileViewed Count'
+		formatString: 0
+		lineageTag: 3c8ce521-fa57-4fd3-b4c2-5a167e5a35c2
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [FileViewed Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'FileDownloaded Count'
+		formatString: 0
+		lineageTag: 43edac35-e997-4b40-aba6-fd98caa96eb5
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [FileDownloaded Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'FileUploaded Count'
+		formatString: 0
+		lineageTag: d0ea6343-80cf-4560-8ebf-bef7d18ffc40
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [FileUploaded Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'FileModified Count'
+		formatString: 0
+		lineageTag: d6c8ce7a-adf9-4301-a746-2fd832178c87
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [FileModified Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'SharingSet Count'
+		formatString: 0
+		lineageTag: 02e1d1eb-00b0-4a45-9f9a-493a7d8438df
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [SharingSet Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Other Operations Count'
+		formatString: 0
+		lineageTag: f969228d-e1df-4999-beac-5f04faa7e9d9
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Other Operations Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Total SharePoint Activity Count'
+		formatString: 0
+		lineageTag: c6bd87a2-1e4d-4631-92ec-7d56d61d6acf
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Total SharePoint Activity Count]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'SharePoint Tier' =
+			
+			VAR RawScore = [Total SharePoint Activity Count]
+			VAR P90 = PERCENTILEX.INC(
+			    FILTER(ALL('SharePoint Activity Summary LL'), NOT(ISBLANK([Total SharePoint Activity Count]))),
+			    [Total SharePoint Activity Count],
+			    0.9
+			)
+			VAR P75 = PERCENTILEX.INC(
+			    FILTER(ALL('SharePoint Activity Summary LL'), NOT(ISBLANK([Total SharePoint Activity Count]))),
+			    [Total SharePoint Activity Count],
+			    0.75
+			)
+			VAR P50 = PERCENTILEX.INC(
+			    FILTER(ALL('SharePoint Activity Summary LL'), NOT(ISBLANK([Total SharePoint Activity Count]))),
+			    [Total SharePoint Activity Count],
+			    0.5
+			)
+			RETURN
+			IF(
+			    ISBLANK(RawScore) || RawScore = 0,
+			    BLANK(),
+			    SWITCH(
+			        TRUE(),
+			        RawScore >= P90, 1,
+			        RawScore >= P75, 2,
+			        RawScore >= P50, 3,
+			        4
+			    )
+			)
+		formatString: 0
+		lineageTag: bfda98a7-0865-41a0-97ae-54a298fa17e9
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'SharePoint Tier Label' =
+			
+			SWITCH(
+			    [SharePoint Tier],
+			    1, "Tier 1 (Top 10%)",
+			    2, "Tier 2 (10-25%)",
+			    3, "Tier 3 (25-50%)",
+			    4, "Tier 4 (Remaining 50%)",
+			    BLANK()
+			)
+		lineageTag: b05d0bc9-d592-47c9-9105-faebfe69e335
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'SharePoint Activity Summary LL' = calculated
+		mode: import
+		source = ```
+				
+				SUMMARIZE (
+				    FILTER(SecDemoM365Usage, SecDemoM365Usage[Workload] = "SharePoint"),
+				    [UserId],
+				    "FileAccessed Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "FileAccessed"
+				        ),
+				    "FileViewed Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "FileViewed"
+				        ),
+				    "FileDownloaded Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "FileDownloaded"
+				        ),
+				    "FileUploaded Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "FileUploaded"
+				        ),
+				    "FileModified Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "FileModified"
+				        ),
+				    "SharingSet Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            SecDemoM365Usage[Operation] = "SharingSet"
+				        ),
+				    "Other Operations Count", 
+				        CALCULATE(
+				            COUNTROWS(SecDemoM365Usage),
+				            NOT(SecDemoM365Usage[Operation] IN { "FileAccessed", "FileViewed", "FileDownloaded", "FileUploaded", "FileModified", "SharingSet" })
+				        ),
+				    "Total SharePoint Activity Count", COUNTROWS(SecDemoM365Usage)
+				)
+				```
+
+	annotation PBI_Id = 70a0ebe3e3274f87a1b12e12452f23c6
+

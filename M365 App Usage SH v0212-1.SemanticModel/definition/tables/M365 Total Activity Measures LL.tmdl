@@ -1,0 +1,1403 @@
+table 'M365 Total Activity Measures LL'
+	lineageTag: 2391d162-b9c5-4cfc-b1f9-5374de9186e9
+
+	measure 'Outlook Activity Sum' = ```
+			
+			VAR SendCount = 
+			    CALCULATE(
+			        COUNTROWS(SecDemoM365Usage),
+			        SecDemoM365Usage[Workload] = "Exchange",
+			        SecDemoM365Usage[Operation] = "Send"
+			    )
+			VAR AccessedCount = 
+			    CALCULATE(
+			        COUNTROWS(SecDemoM365Usage),
+			        SecDemoM365Usage[Workload] = "Exchange",
+			        SecDemoM365Usage[Operation] = "MailItemsAccessed"
+			    )
+			VAR LoginCount = 
+			    CALCULATE(
+			        COUNTROWS(SecDemoM365Usage),
+			        SecDemoM365Usage[Workload] = "Exchange",
+			        SecDemoM365Usage[Operation] = "MailboxLogin"
+			    )
+			RETURN
+			    SendCount + AccessedCount + LoginCount
+			```
+		formatString: 0
+		isHidden
+		lineageTag: 6510bdca-987d-4f8b-977d-8bf3162d9812
+
+	measure 'Outlook Tier' = ```
+			
+			VAR RawScore = [Outlook Activity Sum]
+			VAR P90 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('Outlook Activity Summary LL'[UserId]), 
+			        NOT(ISBLANK([Outlook Activity Sum]))
+			    ),
+			    [Outlook Activity Sum],
+			    0.9
+			)
+			VAR P75 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('Outlook Activity Summary LL'[UserId]), 
+			        NOT(ISBLANK([Outlook Activity Sum]))
+			    ),
+			    [Outlook Activity Sum],
+			    0.75
+			)
+			VAR P50 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('Outlook Activity Summary LL'[UserId]), 
+			        NOT(ISBLANK([Outlook Activity Sum]))
+			    ),
+			    [Outlook Activity Sum],
+			    0.5
+			)
+			RETURN
+			IF(
+			    ISBLANK(RawScore) || RawScore = 0,
+			    BLANK(),
+			    SWITCH(
+			        TRUE(),
+			        RawScore >= P90, 1,
+			        RawScore >= P75, 2,
+			        RawScore >= P50, 3,
+			        4
+			    )
+			)
+			```
+		formatString: 0
+		isHidden
+		lineageTag: b2be00da-cd34-40b4-9b96-15a65826b874
+
+	measure 'Outlook Activity' =
+			
+			SWITCH(
+			    [Outlook Tier],
+			    1, "Top 10%",
+			    2, "10-25%",
+			    3, "25-50%",
+			    4, "Bottom 50%",
+			    BLANK()
+			)
+		isHidden
+		lineageTag: 164404b1-ea51-443a-8c22-bda15f774c1d
+
+	measure 'Word Activity Count' =
+			
+			CALCULATE(
+			    COUNTROWS(SecDemoM365Usage),
+			    LOWER(SecDemoM365Usage[SourceFileExtension]) IN { "docx", "doc", "dotx" }
+			)
+		formatString: 0
+		isHidden
+		lineageTag: c136aec5-22a3-4306-b562-20bde813d0ae
+
+	measure 'Excel Activity Count' =
+			
+			CALCULATE(
+			    COUNTROWS(SecDemoM365Usage),
+			    LOWER(SecDemoM365Usage[SourceFileExtension]) IN { "xlsx", "xls", "xlsm", "csv" }
+			)
+		formatString: 0
+		isHidden
+		lineageTag: 93101f3d-4fe6-48bf-94f9-e7673281631e
+
+	measure 'PowerPoint Activity Count' =
+			
+			CALCULATE(
+			    COUNTROWS(SecDemoM365Usage),
+			    LOWER(SecDemoM365Usage[SourceFileExtension]) IN { "pptx", "ppt", "ppsx" }
+			)
+		formatString: 0
+		isHidden
+		lineageTag: 4e55eeb2-d976-46b3-99cc-ea71c6923336
+
+	measure 'M365 Word, Excel and PPT Apps Total' =
+			
+			CALCULATE(
+			    COUNTROWS(SecDemoM365Usage),
+			    LOWER(SecDemoM365Usage[SourceFileExtension]) IN { "docx", "doc", "dotx", "xlsx", "xls", "xlsm", "csv", "pptx", "ppt", "ppsx" }
+			)
+		formatString: 0
+		isHidden
+		lineageTag: 68b340c4-e316-4415-9f70-787af3acc554
+
+	measure 'Word Tier V2' = ```
+			
+			VAR RawScore = [Word Activity Count v2]
+			VAR P90 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('SecDemEntraUsers'), 
+			        NOT(ISBLANK(CALCULATE([Word Activity Count v2])))
+			    ),
+			    CALCULATE([Word Activity Count v2]),
+			    0.9
+			)
+			VAR P75 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('SecDemEntraUsers'), 
+			        NOT(ISBLANK(CALCULATE([Word Activity Count v2])))
+			    ),
+			    CALCULATE([Word Activity Count v2]),
+			    0.75
+			)
+			VAR P50 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('SecDemEntraUsers'), 
+			        NOT(ISBLANK(CALCULATE([Word Activity Count v2])))
+			    ),
+			    CALCULATE([Word Activity Count v2]),
+			    0.5
+			)
+			RETURN
+			IF(
+			    ISBLANK(RawScore) || RawScore = 0,
+			    BLANK(),
+			    SWITCH(
+			        TRUE(),
+			        RawScore >= P90, 1,
+			        RawScore >= P75, 2,
+			        RawScore >= P50, 3,
+			        4
+			    )
+			)
+			```
+		formatString: 0
+		lineageTag: aa6cbd02-afc5-4082-8ec5-a6ae4a298113
+
+	measure 'Excel Tier V2' = ```
+			
+			VAR RawScore = [Excel Activity Count V2]
+			VAR P90 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('SecDemEntraUsers'), 
+			        NOT(ISBLANK(CALCULATE([Excel Activity Count V2])))
+			    ),
+			    CALCULATE([Excel Activity Count V2]),
+			    0.9
+			)
+			VAR P75 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('SecDemEntraUsers'), 
+			        NOT(ISBLANK(CALCULATE([Excel Activity Count V2])))
+			    ),
+			    CALCULATE([Excel Activity Count V2]),
+			    0.75
+			)
+			VAR P50 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('SecDemEntraUsers'), 
+			        NOT(ISBLANK(CALCULATE([Excel Activity Count V2])))
+			    ),
+			    CALCULATE([Excel Activity Count V2]),
+			    0.5
+			)
+			RETURN
+			IF(
+			    ISBLANK(RawScore) || RawScore = 0,
+			    BLANK(),
+			    SWITCH(
+			        TRUE(),
+			        RawScore >= P90, 1,
+			        RawScore >= P75, 2,
+			        RawScore >= P50, 3,
+			        4
+			    )
+			)
+			```
+		formatString: 0
+		lineageTag: c2efe455-498a-405c-b6d0-4794abe3ed11
+
+	measure 'PowerPoint Tier V2' = ```
+			
+			VAR RawScore = [PowerPoint Activity Count V2]
+			VAR P90 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('SecDemEntraUsers'), 
+			        NOT(ISBLANK(CALCULATE([PowerPoint Activity Count V2])))
+			    ),
+			    CALCULATE([PowerPoint Activity Count V2]),
+			    0.9
+			)
+			VAR P75 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('SecDemEntraUsers'), 
+			        NOT(ISBLANK(CALCULATE([PowerPoint Activity Count V2])))
+			    ),
+			    CALCULATE([PowerPoint Activity Count V2]),
+			    0.75
+			)
+			VAR P50 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('SecDemEntraUsers'), 
+			        NOT(ISBLANK(CALCULATE([PowerPoint Activity Count V2])))
+			    ),
+			    CALCULATE([PowerPoint Activity Count V2]),
+			    0.5
+			)
+			RETURN
+			IF(
+			    ISBLANK(RawScore) || RawScore = 0,
+			    BLANK(),
+			    SWITCH(
+			        TRUE(),
+			        RawScore >= P90, 1,
+			        RawScore >= P75, 2,
+			        RawScore >= P50, 3,
+			        4
+			    )
+			)
+			```
+		formatString: 0
+		lineageTag: ca3d518d-07bc-4004-ad7a-58704a40ab7f
+
+	measure 'M365 Word, Excel and PPT Apps Tier V2' = ```
+			
+			VAR RawScore = [M365 Word, Excel and PPT Apps Total V2]
+			VAR P90 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('SecDemEntraUsers'), 
+			        NOT(ISBLANK(CALCULATE([M365 Word, Excel and PPT Apps Total V2])))
+			    ),
+			    CALCULATE([M365 Word, Excel and PPT Apps Total]),
+			    0.9
+			)
+			VAR P75 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('SecDemEntraUsers'), 
+			        NOT(ISBLANK(CALCULATE([M365 Word, Excel and PPT Apps Total V2])))
+			    ),
+			    CALCULATE([M365 Word, Excel and PPT Apps Total V2]),
+			    0.75
+			)
+			VAR P50 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('SecDemEntraUsers'), 
+			        NOT(ISBLANK(CALCULATE([M365 Word, Excel and PPT Apps Total V2])))
+			    ),
+			    CALCULATE([M365 Word, Excel and PPT Apps Total V2]),
+			    0.5
+			)
+			RETURN
+			IF(
+			    ISBLANK(RawScore) || RawScore = 0,
+			    BLANK(),
+			    SWITCH(
+			        TRUE(),
+			        RawScore >= P90, 1,
+			        RawScore >= P75, 2,
+			        RawScore >= P50, 3,
+			        4
+			    )
+			)
+			```
+		formatString: 0
+		lineageTag: 714bf824-4dff-4533-89f1-587930327a3c
+
+	measure 'Word Activity V2' =
+			
+			SWITCH(
+			    [Word Tier V2],
+			    1, "Top 10%",
+			    2, "10-25%",
+			    3, "25-50%",
+			    4, "Bottom 50%",
+			    BLANK()
+			)
+		lineageTag: ccdfa103-01b9-48ca-96e8-998748c842de
+
+	measure 'Excel Activity V2' =
+			
+			SWITCH(
+			    [Excel Tier V2],
+			    1, "Top 10%",
+			    2, "10-25%",
+			    3, "25-50%",
+			    4, "Bottom 50%",
+			    BLANK()
+			)
+		lineageTag: ceafddc7-038e-46d9-ad01-71b00bfa70c2
+
+	measure 'PowerPoint Activity V2' =
+			
+			SWITCH(
+			    [PowerPoint Tier V2],
+			    1, "Top 10%",
+			    2, "10-25%",
+			    3, "25-50%",
+			    4, "Bottom 50%",
+			    BLANK()
+			)
+		lineageTag: e0966173-9918-4e42-92ce-405e13808b19
+
+	measure 'M365 Word, Excel and PPT Apps Activity V2' =
+			
+			SWITCH(
+			    [M365 Word, Excel and PPT Apps Tier V2],
+			    1, "Top 10%",
+			    2, "10-25%",
+			    3, "25-50%",
+			    4, "Bottom 50%",
+			    BLANK()
+			)
+		lineageTag: f6e8dafb-c88d-485a-99b7-9c68ec0dbb7f
+
+	measure 'M365 Word, Excel, PPT and Outlook Apps Total' = ```
+			
+			VAR OfficeFilesCount = 
+			    CALCULATE(
+			        COUNTROWS(SecDemoM365Usage),
+			        LOWER(SecDemoM365Usage[SourceFileExtension]) IN { "docx", "doc", "dotx", "xlsx", "xls", "xlsm", "csv", "pptx", "ppt", "ppsx" }
+			    )
+			VAR ExchangeCount= 
+			    CALCULATE(
+			        COUNTROWS(SecDemoM365Usage),
+			        SecDemoM365Usage[Workload] = "Exchange",
+			        SecDemoM365Usage[Operation] IN { "mailboxlogin, mailitemsaccessed, send"}
+			    )
+			VAR OutlookCount = ExchangeCount
+			RETURN
+			    OfficeFilesCount + OutlookCount
+			```
+		formatString: 0
+		isHidden
+		lineageTag: 102641f7-6983-469d-8185-0b2fd9e0b919
+
+	measure 'M365 All Apps Total' = ```
+			
+			VAR OfficeFilesCount = 
+			    CALCULATE(
+			        COUNTROWS(SecDemoM365Usage),
+			        LOWER(SecDemoM365Usage[SourceFileExtension]) IN { "docx", "doc", "dotx", "xlsx", "xls", "xlsm", "csv", "pptx", "ppt", "ppsx" }
+			    )
+			VAR ExchangeCount= 
+			    CALCULATE(
+			        COUNTROWS(SecDemoM365Usage),
+			        SecDemoM365Usage[Workload] = "Exchange",
+			        SecDemoM365Usage[Operation] IN { "Send, UserLoggedIn, Create"}
+			    )
+			VAR TeamsCount = 
+			    CALCULATE(
+			        COUNTROWS(SecDemoM365Usage),
+			        SecDemoM365Usage[Workload] = "MicrosoftTeams",
+			        SecDemoM365Usage[Operation] IN { "MessageSent", "MessageRead", "MeetingParticipantJoined" }
+			    )
+			VAR OutlookCount = ExchangeCount
+			RETURN
+			    OfficeFilesCount + OutlookCount + TeamsCount
+			```
+		formatString: 0
+		isHidden
+		lineageTag: 0b9d6b33-1c96-4e9b-b390-9e3ca8ce1c8a
+
+	measure 'M365 All Apps Tier' = ```
+			
+			VAR RawScore = [M365 All Apps Total]
+			VAR P90 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL(SecDemoM365Usage[UserId]), 
+			        NOT(ISBLANK([M365 All Apps Total]))
+			    ),
+			    [M365 All Apps Total],
+			    0.9
+			)
+			VAR P75 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL(SecDemoM365Usage[UserId]), 
+			        NOT(ISBLANK([M365 All Apps Total]))
+			    ),
+			    [M365 All Apps Total],
+			    0.75
+			)
+			VAR P50 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL(SecDemoM365Usage[UserId]), 
+			        NOT(ISBLANK([M365 All Apps Total]))
+			    ),
+			    [M365 All Apps Total],
+			    0.5
+			)
+			RETURN
+			IF(
+			    ISBLANK(RawScore) || RawScore = 0,
+			    BLANK(),
+			    SWITCH(
+			        TRUE(),
+			        RawScore >= P90, 1,
+			        RawScore >= P75, 2,
+			        RawScore >= P50, 3,
+			        4
+			    )
+			)
+			```
+		formatString: 0
+		isHidden
+		lineageTag: 8cedd3fa-45df-4a73-897b-bd57579393ce
+
+	measure 'M365 All Apps Activity' =
+			
+			SWITCH(
+			    [M365 All Apps Tier V2],
+			    1, "Top 10%",
+			    2, "10-25%",
+			    3, "25-50%",
+			    4, "Bottom 50%",
+			    BLANK()
+			)
+		lineageTag: 56c46848-8757-49fa-ae06-fc74f63b1f7c
+
+	measure 'Overall M365 Raw Score LL' = ```
+			
+			([Teams Activity Sum V2] * 0.5) +
+			([Outlook Activity] * 0.2) +
+			([Excel Activity V2] * 0.10) +
+			([Word Activity V2] * 0.10)  +
+			([PowerPoint Activity V2] * 0.10) 
+			```
+		isHidden
+		lineageTag: d7856a4a-5958-4d4a-9844-441add1acd53
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Outlook Activity Sum V2' = ```
+			
+			SUMX(
+			    RELATEDTABLE('SecDemoM365Usage'),
+			    IF(
+			        'SecDemoM365Usage'[Workload] = "Exchange" && 
+			        'SecDemoM365Usage'[Operation] IN {"mailitemsaccessed", "send"},
+			        1,
+			        0
+			    )
+			)
+			```
+		formatString: 0
+		lineageTag: f3e436d1-a689-4f60-9bce-46d7a61b7e42
+
+	measure 'Outlook Tier v2' = ```
+			
+			VAR RawScore = [Outlook Activity Sum V2]
+			VAR P90 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('SecDemEntraUsers'), 
+			        NOT(ISBLANK(CALCULATE([Outlook Activity Sum V2])))
+			    ),
+			    CALCULATE([Outlook Activity Sum V2]),
+			    0.9
+			)
+			VAR P75 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('SecDemEntraUsers'), 
+			        NOT(ISBLANK(CALCULATE([Outlook Activity Sum V2])))
+			    ),
+			    CALCULATE([Outlook Activity Sum V2]),
+			    0.75
+			)
+			VAR P50 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('SecDemEntraUsers'), 
+			        NOT(ISBLANK(CALCULATE([Outlook Activity Sum V2])))
+			    ),
+			    CALCULATE([Outlook Activity Sum V2]),
+			    0.5
+			)
+			RETURN
+			IF(
+			    ISBLANK(RawScore) || RawScore = 0,
+			    BLANK(),
+			    SWITCH(
+			        TRUE(),
+			        RawScore >= P90, 1,
+			        RawScore >= P75, 2,
+			        RawScore >= P50, 3,
+			        4
+			    )
+			)
+			```
+		formatString: 0
+		lineageTag: eb038986-d6d1-4fc3-a0fe-c66e5c6a16a6
+
+	measure 'Outlook Activity V2' =
+			
+			SWITCH(
+			    [Outlook Tier v2],
+			    1, "Top 10%",
+			    2, "10-25%",
+			    3, "25-50%",
+			    4, "Bottom 50%",
+			    BLANK())
+		lineageTag: 669e05f6-684d-470e-8558-eab8a093151f
+
+	measure 'Excel Activity Count V2' =
+			
+			SUMX(
+			    RELATEDTABLE('SecDemoM365Usage'),
+			    IF(
+			        LOWER('SecDemoM365Usage'[SourceFileExtension]) IN { "xlsx", "xls", "xlsm", "csv" } &&
+			        ('SecDemoM365Usage'[Operation] IN { "FileViewed", "FileModified", "FileDownloaded", "FileUploaded" }),
+			        1,
+			        0
+			    )
+			)
+		formatString: 0
+		lineageTag: 714cf3f6-7e49-4d65-8476-c8b5a93f8cba
+
+	measure 'PowerPoint Activity Count V2' =
+			
+			SUMX(
+			    RELATEDTABLE('SecDemoM365Usage'),
+			    IF(
+			        LOWER('SecDemoM365Usage'[SourceFileExtension]) IN { "pptx", "ppt", "ppsx" } &&
+			        ('SecDemoM365Usage'[Operation] IN { "FileViewed", "FileModified", "FileDownloaded", "FileUploaded" }),
+			        1,
+			        0
+			    )
+			)
+		formatString: 0
+		lineageTag: aec0f2d7-ac16-4c97-b8e0-85612949e897
+
+	measure 'Word Activity Count v2' =
+			
+			SUMX(
+			    RELATEDTABLE('SecDemoM365Usage'),
+			    IF(
+			        LOWER('SecDemoM365Usage'[SourceFileExtension]) IN { "docx", "doc", "dotx" } &&
+			        ('SecDemoM365Usage'[Operation] IN { "FileViewed", "FileModified", "FileDownloaded", "FileUploaded" }),
+			        1,
+			        0
+			    )
+			)
+		formatString: 0
+		lineageTag: f803bee7-bc9c-4f1b-b751-0f08996a76be
+
+	measure 'M365 Word, Excel and PPT Apps Total V2' =
+			
+			SUMX(
+			    RELATEDTABLE('SecDemoM365Usage'),
+			    IF(
+			        LOWER('SecDemoM365Usage'[SourceFileExtension]) IN { "docx", "doc", "dotx", "xlsx", "xls", "xlsm", "csv", "pptx", "ppt", "ppsx" } &&
+			        ('SecDemoM365Usage'[Operation] IN { "FileViewed", "FileModified", "FileDownloaded", "FileUploaded" }),
+			        1,
+			        0
+			    )
+			)
+		formatString: 0
+		lineageTag: c9f6d09a-c723-43c4-9081-a5db4812f4f3
+
+	measure 'M365 All Apps Total V2' = ```
+			
+			SUMX(
+			    RELATEDTABLE('SecDemoM365Usage'),
+			    VAR IsOfficeFile = 
+			        LOWER('SecDemoM365Usage'[SourceFileExtension]) IN { "docx", "doc", "dotx", "xlsx", "xls", "xlsm", "csv", "pptx", "ppt", "ppsx" } &&
+			        ('SecDemoM365Usage'[Operation] IN { "FileViewed", "FileModified", "FileDownloaded", "FileUploaded" })
+			    VAR IsExchange = 
+			        'SecDemoM365Usage'[Workload] = "Exchange" && 
+			        'SecDemoM365Usage'[Operation] IN { "Send", "MailItemsAccessed"}
+			    VAR IsTeams = 
+			        'SecDemoM365Usage'[Workload] = "MicrosoftTeams" && 
+			        'SecDemoM365Usage'[Operation] IN { "MessageSent", "MessageRead", "MeetingParticipantJoined" }
+			    RETURN
+			        IF(IsOfficeFile || IsExchange || IsTeams, 1, 0)
+			)
+			```
+		formatString: 0
+		lineageTag: 4e808319-0c16-4419-a2e6-b841ab843f46
+
+	measure 'Overall M365 Raw Score LL V2' = ```
+			
+			([Teams Activity Sum V2] * 0.2) +
+			([Outlook Activity V2] * 0.2) +
+			([Excel Activity Count V2] * 0.20) +
+			([Word Activity Count v2] * 0.20)  +
+			([PowerPoint Activity Count V2] * 0.20) 
+			```
+		lineageTag: 9310b5d0-640f-4941-b2b2-8b77218a0665
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'M365 All Apps Tier V2' = ```
+			
+			VAR RawScore = [M365 All Apps Total V2]
+			VAR P90 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('SecDemEntraUsers'), 
+			        NOT(ISBLANK(CALCULATE([M365 All Apps Total V2])))
+			    ),
+			    CALCULATE([M365 All Apps Total V2]),
+			    0.9
+			)
+			VAR P75 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('SecDemEntraUsers'), 
+			        NOT(ISBLANK(CALCULATE([M365 All Apps Total V2])))
+			    ),
+			    CALCULATE([M365 All Apps Total V2]),
+			    0.75
+			)
+			VAR P50 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('SecDemEntraUsers'), 
+			        NOT(ISBLANK(CALCULATE([M365 All Apps Total V2])))
+			    ),
+			    CALCULATE([M365 All Apps Total V2]),
+			    0.5
+			)
+			RETURN
+			IF(
+			    ISBLANK(RawScore) || RawScore = 0,
+			    BLANK(),
+			    SWITCH(
+			        TRUE(),
+			        RawScore >= P90, 1,
+			        RawScore >= P75, 2,
+			        RawScore >= P50, 3,
+			        4
+			    )
+			)
+			```
+		formatString: 0
+		lineageTag: 189e9034-96fc-464a-abec-b42835781451
+
+	measure 'Teams Tier v2' = ```
+			
+			VAR RawScore = [Teams Activity Sum V2]
+			VAR P90 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('SecDemEntraUsers'), 
+			        NOT(ISBLANK(CALCULATE([Teams Activity Sum V2])))
+			    ),
+			    CALCULATE([Teams Activity Sum V2]),
+			    0.9
+			)
+			VAR P75 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('SecDemEntraUsers'), 
+			        NOT(ISBLANK(CALCULATE([Teams Activity Sum V2])))
+			    ),
+			    CALCULATE([Teams Activity Sum V2]),
+			    0.75
+			)
+			VAR P50 = PERCENTILEX.INC(
+			    FILTER(
+			        ALL('SecDemEntraUsers'), 
+			        NOT(ISBLANK(CALCULATE([Teams Activity Sum V2])))
+			    ),
+			    CALCULATE([Teams Activity Sum V2]),
+			    0.5
+			)
+			RETURN
+			IF(
+			    ISBLANK(RawScore) || RawScore = 0,
+			    BLANK(),
+			    SWITCH(
+			        TRUE(),
+			        RawScore >= P90, 1,
+			        RawScore >= P75, 2,
+			        RawScore >= P50, 3,
+			        4
+			    )
+			)
+			```
+		formatString: 0
+		lineageTag: b214ee89-7bfc-4d4a-aeb7-61d2189d6b95
+
+	measure 'Teams Activity Sum V2' = ```
+			
+			SUMX(
+			    RELATEDTABLE('SecDemoM365Usage'),
+			    IF(
+			        'SecDemoM365Usage'[Workload] = "MicrosoftTeams" && 
+			        'SecDemoM365Usage'[Operation] IN {"MessageSent", "MessageRead", "MeetingParticipantJoined"},
+			        1,
+			        0
+			    )
+			)
+			```
+		formatString: 0
+		lineageTag: cb733bbb-78fd-4e4f-a03f-6248c1a4973b
+
+	measure 'Teams Activity V2' =
+			
+			SWITCH(
+			    [Teams Tier v2],
+			    1, "Top 10%",
+			    2, "10-25%",
+			    3, "25-50%",
+			    4, "Bottom 50%",
+			    BLANK())
+		lineageTag: bd5be17a-530c-4c97-b830-e46ea2c5d51e
+
+	measure 'Teams Activity Weighted V2' =
+			
+			VAR Teams_Activity_Sum_V2 =
+			    SUMX(
+			        RELATEDTABLE('SecDemoM365Usage'),
+			        IF(
+			            'SecDemoM365Usage'[Workload] = "MicrosoftTeams" &&
+			            'SecDemoM365Usage'[Operation] IN {"MessageSent", "MessageRead", "MeetingParticipantJoined"},
+			            1,
+			            0
+			        )
+			    )
+			VAR TeamWeight = SELECTEDVALUE('Teams Weight %'[Teams Weight], 50) / 100
+			RETURN Teams_Activity_Sum_V2 * TeamWeight
+		lineageTag: 4bd49db3-bc6b-43b8-83c7-a6ecc67292d0
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Outlook Activity Weighted V2' =
+			
+			VAR Outlook_Activity_Sum_V2 =
+			    SUMX(
+			        RELATEDTABLE('SecDemoM365Usage'),
+			        IF(
+			            'SecDemoM365Usage'[Workload] = "Exchange" &&
+			            'SecDemoM365Usage'[Operation] IN {"Send", "MailItemsAccessed"},
+			            1,
+			            0
+			        )
+			    )
+			VAR OutlookWeight = SELECTEDVALUE('Outlook Weight %'[Outlook Weight %], 30) / 100
+			RETURN Outlook_Activity_Sum_V2 * OutlookWeight
+		lineageTag: 14692175-c952-4b1f-8c73-a560af39d9a1
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Word Activity Weighted V2' =
+			
+			VAR Word_Activity_Sum_V2 =
+			    SUMX(
+			        RELATEDTABLE('SecDemoM365Usage'),
+			        IF(
+			            LOWER('SecDemoM365Usage'[SourceFileExtension]) IN {"docx", "doc", "dotx"} &&
+			            'SecDemoM365Usage'[Operation] IN {"FileViewed", "FileModified", "FileDownloaded", "FileUploaded"},
+			            1,
+			            0
+			        )
+			    )
+			VAR WordWeight = SELECTEDVALUE('Word Weight %'[Word Weight %], 10) / 100
+			RETURN Word_Activity_Sum_V2 * WordWeight
+		lineageTag: 3522973f-c1a3-49bc-8414-7b04fc9b076a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Excel Activity Weighted V2' =
+			
+			VAR Excel_Activity_Sum_V2 =
+			    SUMX(
+			        RELATEDTABLE('SecDemoM365Usage'),
+			        IF(
+			            LOWER('SecDemoM365Usage'[SourceFileExtension]) IN {"xlsx", "xls", "xlsm", "csv"} &&
+			            'SecDemoM365Usage'[Operation] IN {"FileViewed", "FileModified", "FileDownloaded", "FileUploaded"},
+			            1,
+			            0
+			        )
+			    )
+			VAR ExcelWeight = SELECTEDVALUE('Excel Weight %'[Excel Weight %], 10) / 100
+			RETURN Excel_Activity_Sum_V2 * ExcelWeight
+		lineageTag: 93c99130-a38c-410a-ac5d-bd6d8377f8b0
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'PowerPoint Activity Weighted V2' =
+			
+			VAR PPT_Activity_Sum_V2 =
+			    SUMX(
+			        RELATEDTABLE('SecDemoM365Usage'),
+			        IF(
+			            LOWER('SecDemoM365Usage'[SourceFileExtension]) IN {"pptx", "ppt", "ppsx"} &&
+			            'SecDemoM365Usage'[Operation] IN {"FileViewed", "FileModified", "FileDownloaded", "FileUploaded"},
+			            1,
+			            0
+			        )
+			    )
+			VAR PPTWeight = SELECTEDVALUE('PowerPoint Weight %'[PowerPoint Weight %], 10) / 100
+			RETURN PPT_Activity_Sum_V2 * PPTWeight
+		lineageTag: 8644e4bc-114d-473c-8243-14c5940f457f
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'M365 All Apps Total Weighted V2' =
+			
+			[Teams Activity Weighted V2] +
+			[Outlook Activity Weighted V2] +
+			[Word Activity Weighted V2] +
+			[Excel Activity Weighted V2] +
+			[PowerPoint Activity Weighted V2]
+		lineageTag: 84e5c152-c36f-439b-9a46-a4f932fd777a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'M365 All Apps Tier Weighted V2' = ```
+			
+			VAR UserWeightedScore = [M365 All Apps Total Weighted V2]
+			VAR P90 = PERCENTILEX.INC(
+			    ALL('SecDemoM365Usage'[UserId]), 
+			    CALCULATE([M365 All Apps Total Weighted V2]),
+			    0.90
+			)
+			VAR P75 = PERCENTILEX.INC(
+			    ALL('SecDemoM365Usage'[UserId]), 
+			    CALCULATE([M365 All Apps Total Weighted V2]),
+			    0.75
+			)
+			VAR P50 = PERCENTILEX.INC(
+			    ALL('SecDemoM365Usage'[UserId]), 
+			    CALCULATE([M365 All Apps Total Weighted V2]),
+			    0.50
+			)
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        UserWeightedScore >= P90, 1,
+			        UserWeightedScore >= P75, 2,
+			        UserWeightedScore >= P50, 3,
+			        4
+			    )
+			```
+		formatString: 0
+		lineageTag: a5dbb0c1-1416-4300-8ad5-02daf2b0b5f6
+
+	measure Action =
+			
+			VAR CurrentTier = SELECTEDVALUE('Copilot Qualification Criteria LL'[Tier])
+			RETURN
+			    SWITCH(
+			        CurrentTier,
+			        1, "Prioritize",
+			        2, "License next",
+			        3, "Enablement",
+			        4, "Monitor",
+			        BLANK()
+			    )
+		lineageTag: ba38733e-49eb-455d-8641-e4492a7ec92d
+
+	measure 'Teams Percentile Weighted' = ```
+			
+			VAR UserScore = [Teams Activity Weighted V2]
+			VAR AllScores = 
+			    ADDCOLUMNS(
+			        ALL('SecDemoM365Usage'[UserId]),
+			        "Score", [Teams Activity Weighted V2]
+			    )
+			VAR P90 = PERCENTILEX.INC(AllScores, [Score], 0.90)
+			VAR P75 = PERCENTILEX.INC(AllScores, [Score], 0.75)
+			VAR P50 = PERCENTILEX.INC(AllScores, [Score], 0.50)
+			RETURN 
+			SWITCH(
+			    TRUE(),
+			    ISBLANK(UserScore), BLANK(),
+			    UserScore >= P90, "Top 10%",
+			    UserScore >= P75, "10-25%",
+			    UserScore >= P50, "25-50%",
+			    "Bottom 50%"
+			)
+			```
+		lineageTag: 09cf4cd7-39e9-428c-8770-098c424b9eb4
+
+	measure 'Excel Percentile Weighted' = ```
+			
+			VAR UserScore = [Excel Activity Weighted V2]
+			VAR AllScores = 
+			    ADDCOLUMNS(
+			        ALL('SecDemoM365Usage'[UserId]),
+			        "Score", [Excel Activity Weighted V2]
+			    )
+			VAR P90 = PERCENTILEX.INC(AllScores, [Score], 0.90)
+			VAR P75 = PERCENTILEX.INC(AllScores, [Score], 0.75)
+			VAR P50 = PERCENTILEX.INC(AllScores, [Score], 0.50)
+			RETURN 
+			SWITCH(
+			    TRUE(),
+			    ISBLANK(UserScore), BLANK(),
+			    UserScore >= P90, "Top 10%",
+			    UserScore >= P75, "10-25%",
+			    UserScore >= P50, "25-50%",
+			    "Bottom 50%"
+			)
+			```
+		lineageTag: 2df4fbe1-6545-46c9-bcf5-d1cd69ce8e18
+
+	measure 'Outlook Percentile Weighted' = ```
+			
+			VAR UserScore = [Outlook Activity Weighted V2]
+			VAR AllScores = 
+			    ADDCOLUMNS(
+			        ALL('SecDemoM365Usage'[UserId]),
+			        "Score", [Outlook Activity Weighted V2]
+			    )
+			VAR P90 = PERCENTILEX.INC(AllScores, [Score], 0.90)
+			VAR P75 = PERCENTILEX.INC(AllScores, [Score], 0.75)
+			VAR P50 = PERCENTILEX.INC(AllScores, [Score], 0.50)
+			RETURN 
+			SWITCH(
+			    TRUE(),
+			    ISBLANK(UserScore), BLANK(),
+			    UserScore >= P90, "Top 10%",
+			    UserScore >= P75, "10-25%",
+			    UserScore >= P50, "25-50%",
+			    "Bottom 50%"
+			)
+			```
+		lineageTag: 57961589-5a23-4b59-a282-c29a9167806f
+
+	measure 'Word Percentile Weighted' = ```
+			
+			VAR UserScore = [Word Activity Weighted V2]
+			VAR AllScores = 
+			    ADDCOLUMNS(
+			        ALL('SecDemoM365Usage'[UserId]),
+			        "Score", [Word Activity Weighted V2]
+			    )
+			VAR P90 = PERCENTILEX.INC(AllScores, [Score], 0.90)
+			VAR P75 = PERCENTILEX.INC(AllScores, [Score], 0.75)
+			VAR P50 = PERCENTILEX.INC(AllScores, [Score], 0.50)
+			RETURN 
+			SWITCH(
+			    TRUE(),
+			    ISBLANK(UserScore), BLANK(),
+			    UserScore >= P90, "Top 10%",
+			    UserScore >= P75, "10-25%",
+			    UserScore >= P50, "25-50%",
+			    "Bottom 50%"
+			)
+			```
+		lineageTag: 8b1b8c15-098f-466e-b3b8-9a792e51decc
+
+	measure 'PowerPoint Percentile Weighted' = ```
+			
+			VAR UserScore = [PowerPoint Activity Weighted V2]
+			VAR AllScores = 
+			    ADDCOLUMNS(
+			        ALL('SecDemoM365Usage'[UserId]),
+			        "Score", [PowerPoint Activity Weighted V2]
+			    )
+			VAR P90 = PERCENTILEX.INC(AllScores, [Score], 0.90)
+			VAR P75 = PERCENTILEX.INC(AllScores, [Score], 0.75)
+			VAR P50 = PERCENTILEX.INC(AllScores, [Score], 0.50)
+			RETURN 
+			SWITCH(
+			    TRUE(),
+			    ISBLANK(UserScore), BLANK(),
+			    UserScore >= P90, "Top 10%",
+			    UserScore >= P75, "10-25%",
+			    UserScore >= P50, "25-50%",
+			    "Bottom 50%"
+			)
+			```
+		lineageTag: 29bb0cbf-35de-4181-a898-d0f4e95a5027
+
+	measure 'M365 All Apps Percentile Weighted' = ```
+			
+			VAR UserScore = [M365 All Apps Total V2]
+			VAR TierValue = [M365 All Apps Tier Weighted V2]
+			RETURN 
+			SWITCH(
+			    TierValue,
+			    1, "Top 10%",
+			    2, "10-25%",
+			    3, "25-50%",
+			    4, "Bottom 50%",
+			    BLANK()
+			)
+			```
+		lineageTag: 874196a1-8668-46ed-b9d4-001b98615f36
+
+	measure 'M365 Usage Rank' = ```
+			
+			VAR RankValue = 
+			    RANKX(
+			        ALLSELECTED('SecDemoM365Usage'[UserId]),
+			        [Selected App M365 Activity]
+			    )
+			VAR TotalUsers = COUNTROWS(ALLSELECTED('SecDemoM365Usage'[UserId]))
+			RETURN DIVIDE(RankValue, TotalUsers, 0)
+			```
+		lineageTag: 54876225-1dd3-49a8-aa08-328f077eb9e9
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Avg Operations - Copilot Users' = ```
+			
+			VAR CopilotUserCount = 
+			    CALCULATE(
+			        DISTINCTCOUNT('SecDemoM365Usage'[UserId]),
+			        'SecDemoM365Usage'[Is Copilot User] = "Copilot User"
+			    )
+			
+			VAR TotalOperations = 
+			    CALCULATE(
+			        COUNTROWS('SecDemoM365Usage'),
+			        'SecDemoM365Usage'[Is Copilot User] = "Copilot User",
+			        VAR IsOfficeFile = 
+			            LOWER('SecDemoM365Usage'[SourceFileExtension]) IN { "docx", "doc", "dotx", "xlsx", "xls", "xlsm", "csv", "pptx", "ppt", "ppsx" } &&
+			            'SecDemoM365Usage'[Operation] IN { "FileViewed", "FileModified", "FileDownloaded", "FileUploaded" }
+			        VAR IsExchange = 
+			            'SecDemoM365Usage'[Workload] = "Exchange" && 
+			            'SecDemoM365Usage'[Operation] IN { "Send", "MailItemsAccessed" }
+			        VAR IsTeams = 
+			            'SecDemoM365Usage'[Workload] = "MicrosoftTeams" && 
+			            'SecDemoM365Usage'[Operation] IN { "MessageSent", "MessageRead", "MeetingParticipantJoined" }
+			        RETURN (IsOfficeFile || IsExchange || IsTeams)
+			    )
+			
+			RETURN 
+			IF(
+			    CopilotUserCount >= 5,  // Minimum threshold
+			    DIVIDE(TotalOperations, CopilotUserCount),
+			    BLANK()
+			)
+			```
+		lineageTag: da1a4e85-b401-4cad-b5e8-cd9824153736
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Avg Operations - Non-Copilot Users' = ```
+			
+			VAR NonCopilotUserCount = 
+			    CALCULATE(
+			        DISTINCTCOUNT('SecDemoM365Usage'[UserId]),
+			        'SecDemoM365Usage'[Is Copilot User] = "Non-Copilot User"
+			    )
+			
+			VAR TotalOperations = 
+			    CALCULATE(
+			        COUNTROWS('SecDemoM365Usage'),
+			        'SecDemoM365Usage'[Is Copilot User] = "Non-Copilot User",
+			        VAR IsOfficeFile = 
+			            LOWER('SecDemoM365Usage'[SourceFileExtension]) IN { "docx", "doc", "dotx", "xlsx", "xls", "xlsm", "csv", "pptx", "ppt", "ppsx" } &&
+			            'SecDemoM365Usage'[Operation] IN { "FileViewed", "FileModified", "FileDownloaded", "FileUploaded" }
+			        VAR IsExchange = 
+			            'SecDemoM365Usage'[Workload] = "Exchange" && 
+			            'SecDemoM365Usage'[Operation] IN { "Send", "MailItemsAccessed" }
+			        VAR IsTeams = 
+			            'SecDemoM365Usage'[Workload] = "MicrosoftTeams" && 
+			            'SecDemoM365Usage'[Operation] IN { "MessageSent", "MessageRead", "MeetingParticipantJoined" }
+			        RETURN (IsOfficeFile || IsExchange || IsTeams)
+			    )
+			
+			RETURN 
+			IF(
+			    NonCopilotUserCount >= 5,  // Minimum threshold
+			    DIVIDE(TotalOperations, NonCopilotUserCount),
+			    BLANK()
+			)
+			```
+		lineageTag: 5da0f9af-276a-4c61-90c7-4c38162b92d9
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Show User Based on Action' = ```
+			
+			VAR HasActionSelection = NOT ISEMPTY(VALUES('Action Filter'[ActionName]))
+			VAR UserAction = [Selected App Action Weighted]
+			VAR IsInFilter = 
+			    IF(
+			        HasActionSelection,
+			        UserAction IN VALUES('Action Filter'[ActionName]),
+			        TRUE()
+			    )
+			RETURN 
+			    IF(IsInFilter, 1, 0)
+			```
+		lineageTag: dcbcfebf-5ed2-4562-b1ee-6ccd4fd8df0b
+
+	measure 'Users by Priority Over Time' = ```
+			
+			VAR SelectedPriorityDisplay = SELECTEDVALUE('Priority Filter'[Priority])
+			VAR SelectedPriority = 
+			    SWITCH(
+			        SelectedPriorityDisplay,
+			        "🔴 Critical", "Critical",
+			        "🟠 High", "High",
+			        "🟡 Medium", "Medium",
+			        "🟢 Promoter", "Promoter",
+			        "⚪ Low", "Low",
+			        BLANK()
+			    )
+			
+			RETURN
+			COUNTROWS(
+			    FILTER(
+			        SecDemEntraUsers,
+			        VAR UserM365Tier = [Selected App M365 Tier Label]
+			        VAR UserCopilotTier = [Selected App Copilot Tier Label]
+			        VAR UserPriority = 
+			            SWITCH(TRUE(),
+			                UserM365Tier = "Top 10%" && UserCopilotTier = "Bottom 50%", "Critical",
+			                UserM365Tier = "Top 10%" && UserCopilotTier = "25-50%", "High",
+			                UserM365Tier = "10-25%" && UserCopilotTier = "Bottom 50%", "High",
+			                UserM365Tier = "Top 10%" && UserCopilotTier = "10-25%", "Medium",
+			                UserM365Tier = "10-25%" && UserCopilotTier = "25-50%", "Medium",
+			                UserM365Tier = "25-50%" && UserCopilotTier = "Bottom 50%", "Medium",
+			                UserM365Tier = "Top 10%" && UserCopilotTier = "Top 10%", "Promoter",
+			                UserM365Tier = "10-25%" && UserCopilotTier = "Top 10%", "Promoter",
+			                UserM365Tier = "25-50%" && UserCopilotTier = "Top 10%", "Promoter",
+			                UserM365Tier = "Bottom 50%" && UserCopilotTier = "Top 10%", "Promoter",
+			                UserM365Tier = "Bottom 50%" && UserCopilotTier = "10-25%", "Promoter",
+			                "Low"
+			            )
+			        RETURN
+			            ISBLANK(SelectedPriority) || UserPriority = SelectedPriority
+			    )
+			)
+			```
+		formatString: 0
+		lineageTag: 4b820765-4add-47b8-a4f7-4ad9b8545c44
+
+	measure 'M365 All Apps Tier NonWeighted' =
+			
+			VAR RawScore = [M365 All Apps Total V2]
+			VAR P90 = PERCENTILEX.INC(
+			    FILTER(ALL('SecDemEntraUsers'), NOT(ISBLANK(CALCULATE([M365 All Apps Total V2])))),
+			    CALCULATE([M365 All Apps Total V2]),
+			    0.9
+			)
+			VAR P75 = PERCENTILEX.INC(
+			    FILTER(ALL('SecDemEntraUsers'), NOT(ISBLANK(CALCULATE([M365 All Apps Total V2])))),
+			    CALCULATE([M365 All Apps Total V2]),
+			    0.75
+			)
+			VAR P50 = PERCENTILEX.INC(
+			    FILTER(ALL('SecDemEntraUsers'), NOT(ISBLANK(CALCULATE([M365 All Apps Total V2])))),
+			    CALCULATE([M365 All Apps Total V2]),
+			    0.5
+			)
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        ISBLANK(RawScore) || RawScore = 0, BLANK(),
+			        RawScore >= P90, "Top 10%",
+			        RawScore >= P75, "10-25%",
+			        RawScore >= P50, "25-50%",
+			        "Bottom 50%"
+			    )
+		lineageTag: 80166e67-147c-42cb-b6cc-bc2ea9af75dd
+
+	measure 'Users - Critical' =
+			
+			VAR SelectedApp = SELECTEDVALUE('App Selection'[AppName], "M365 All Apps")
+			VAR UsersTable = SUMMARIZE('SecDemoM365Usage', 'SecDemoM365Usage'[UserId])
+			
+			RETURN
+			COUNTROWS(
+			    FILTER(
+			        UsersTable,
+			        VAR UserPriority = CALCULATE([Selected App Priority])
+			        RETURN CONTAINSSTRING(UserPriority, "Critical")
+			    )
+			)
+		formatString: 0
+		lineageTag: e2b8d0de-cc20-4db7-98af-097d90b7601e
+
+	measure 'Users - High' =
+			
+			VAR SelectedApp = SELECTEDVALUE('App Selection'[AppName], "M365 All Apps")
+			VAR UsersTable = SUMMARIZE('SecDemoM365Usage', 'SecDemoM365Usage'[UserId])
+			
+			RETURN
+			COUNTROWS(
+			    FILTER(
+			        UsersTable,
+			        VAR UserPriority = CALCULATE([Selected App Priority])
+			        RETURN CONTAINSSTRING(UserPriority, "High")
+			    )
+			)
+		formatString: 0
+		lineageTag: 643ac9a3-9d1a-48da-94f6-652945e785ef
+
+	measure 'Users - Medium' =
+			
+			VAR SelectedApp = SELECTEDVALUE('App Selection'[AppName], "M365 All Apps")
+			VAR UsersTable = SUMMARIZE('SecDemoM365Usage', 'SecDemoM365Usage'[UserId])
+			
+			RETURN
+			COUNTROWS(
+			    FILTER(
+			        UsersTable,
+			        VAR UserPriority = CALCULATE([Selected App Priority])
+			        RETURN CONTAINSSTRING(UserPriority, "Medium")
+			    )
+			)
+		formatString: 0
+		lineageTag: 46dcb3e4-1c2a-4212-bb57-d1dd7093dfa8
+
+	measure 'Users - Promoter' =
+			
+			VAR SelectedApp = SELECTEDVALUE('App Selection'[AppName], "M365 All Apps")
+			VAR UsersTable = SUMMARIZE('SecDemoM365Usage', 'SecDemoM365Usage'[UserId])
+			
+			RETURN
+			COUNTROWS(
+			    FILTER(
+			        UsersTable,
+			        VAR UserPriority = CALCULATE([Selected App Priority])
+			        RETURN CONTAINSSTRING(UserPriority, "Promoter")
+			    )
+			)
+		formatString: 0
+		lineageTag: c2a59954-061c-44a0-ac59-0a9c9eff0362
+
+	measure 'Users - Low' =
+			
+			VAR SelectedApp = SELECTEDVALUE('App Selection'[AppName], "M365 All Apps")
+			VAR UsersTable = SUMMARIZE('SecDemoM365Usage', 'SecDemoM365Usage'[UserId])
+			
+			RETURN
+			COUNTROWS(
+			    FILTER(
+			        UsersTable,
+			        VAR UserPriority = CALCULATE([Selected App Priority])
+			        RETURN CONTAINSSTRING(UserPriority, "Low")
+			    )
+			)
+		formatString: 0
+		lineageTag: 021402e7-02ee-4419-9e20-097a15b4f69c
+
+	measure 'DEBUG Priority Counts' =
+			
+			VAR UsersTable = SUMMARIZE('SecDemoM365Usage', 'SecDemoM365Usage'[UserId])
+			
+			VAR CriticalCount = COUNTROWS(FILTER(UsersTable, CALCULATE([User Priority Calculated]) = "Critical"))
+			VAR HighCount = COUNTROWS(FILTER(UsersTable, CALCULATE([User Priority Calculated]) = "High"))
+			VAR MediumCount = COUNTROWS(FILTER(UsersTable, CALCULATE([User Priority Calculated]) = "Medium"))
+			VAR PromoterCount = COUNTROWS(FILTER(UsersTable, CALCULATE([User Priority Calculated]) = "Promoter"))
+			VAR LowCount = COUNTROWS(FILTER(UsersTable, CALCULATE([User Priority Calculated]) = "Low"))
+			
+			RETURN
+			"C:" & CriticalCount & " H:" & HighCount & " M:" & MediumCount & " P:" & PromoterCount & " L:" & LowCount
+		isHidden
+		lineageTag: 8516e012-f085-4c37-9cbf-d4cfeb884399
+
+	measure 'User Priority Calculated' =
+			
+			VAR M365Tier = [Selected App M365 Tier Label]
+			VAR CopilotTier = [Selected App Copilot Tier Label]
+			
+			RETURN
+			    SWITCH(
+			        TRUE(),
+			        ISBLANK(M365Tier) || ISBLANK(CopilotTier), BLANK(),
+			        M365Tier = "Top 10%" && CopilotTier = "Top 10%", "Promoter",
+			        M365Tier = "Top 10%" && CopilotTier = "10-25%", "Promoter",
+			        M365Tier = "Top 10%" && CopilotTier = "25-50%", "High",
+			        M365Tier = "Top 10%" && CopilotTier = "Bottom 50%", "Critical",
+			        M365Tier = "10-25%" && CopilotTier = "Top 10%", "Promoter",
+			        M365Tier = "10-25%" && CopilotTier = "10-25%", "Promoter",
+			        M365Tier = "10-25%" && CopilotTier = "25-50%", "Medium",
+			        M365Tier = "10-25%" && CopilotTier = "Bottom 50%", "High",
+			        M365Tier = "25-50%" && CopilotTier = "Top 10%", "Promoter",
+			        M365Tier = "25-50%" && CopilotTier = "10-25%", "Promoter",
+			        M365Tier = "25-50%" && CopilotTier = "25-50%", "Medium",
+			        M365Tier = "25-50%" && CopilotTier = "Bottom 50%", "Medium",
+			        M365Tier = "Bottom 50%" && CopilotTier = "Top 10%", "Promoter",
+			        M365Tier = "Bottom 50%" && CopilotTier = "10-25%", "Promoter",
+			        M365Tier = "Bottom 50%" && CopilotTier = "25-50%", "Low",
+			        M365Tier = "Bottom 50%" && CopilotTier = "Bottom 50%", "Low",
+			        BLANK()
+			    )
+		lineageTag: d27a2ca1-33ab-4fbf-b5cf-0c8f149bf8a5
+
+	measure 'Total Users' =
+			
+			DISTINCTCOUNT(SecDemEntraUsers[userPrincipalName])
+		formatString: 0
+		lineageTag: d0b372ba-ffc4-45aa-93e8-234c6fbda3a4
+
+	measure 'Avg Actions Per User' =
+			
+			DIVIDE(
+			    [M365 All Apps Total V2],
+			    DISTINCTCOUNT(SecDemEntraUsers[userPrincipalName]),
+			    0
+			)
+		lineageTag: 1081d490-fd96-4a86-a885-105dd8e01e3d
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Active M365 Users' =
+			
+			COUNTROWS(
+			    FILTER(
+			        SecDemEntraUsers,
+			        [M365 All Apps Total V2] > 0
+			    )
+			)
+		formatString: 0
+		lineageTag: f90a5bb7-be91-4814-bb70-2fe945d91b92
+
+	measure 'Active User Rate' =
+			
+			DIVIDE([Active M365 Users], [Total Users], 0)
+		lineageTag: a1d0875d-3b0b-488b-b5df-4489718b403f
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'App Actions Dynamic' =
+			
+			VAR SelectedApp = SELECTEDVALUE('App Actions Table'[AppName])
+			RETURN
+			SWITCH(
+			    SelectedApp,
+			    "Teams", [Teams Activity Sum V2],
+			    "Outlook", [Outlook Activity Sum V2],
+			    "Excel", [Excel Activity Count V2],
+			    "Word", [Word Activity Count V2],
+			    "PowerPoint", [PowerPoint Activity Count V2],
+			    BLANK()
+			)
+		formatString: 0
+		lineageTag: 686f814e-2a50-49f9-af97-979aa57b852b
+
+	measure 'Actions by Tier and App' =
+			
+			VAR SelectedApp = SELECTEDVALUE('App Actions Table'[AppName])
+			VAR CurrentTier = SELECTEDVALUE('M365 Tiers'[M365TierName])
+			RETURN
+			SUMX(
+			    FILTER(
+			        SecDemEntraUsers,
+			        [Selected App M365 Tier Label] = CurrentTier
+			    ),
+			    SWITCH(
+			        SelectedApp,
+			        "Teams", [Teams Activity Sum V2],
+			        "Outlook", [Outlook Activity Sum V2],
+			        "Excel", [Excel Activity Count V2],
+			        "Word", [Word Activity Count V2],
+			        "PowerPoint", [PowerPoint Activity Count V2],
+			        [M365 All Apps Total V2]
+			    )
+			)
+		formatString: 0
+		lineageTag: 977d2f61-fab4-49b9-9f9a-0ed276515f40
+
+	measure 'Teams Weekly Actions' =
+			
+			CALCULATE(
+			    COUNTROWS(SecDemoM365Usage),
+			    SecDemoM365Usage[Workload] = "MicrosoftTeams",
+			    SecDemoM365Usage[Operation] IN { "MessageSent", "MessageRead", "MeetingParticipantJoined" }
+			)
+		formatString: 0
+		lineageTag: 22f516a2-d9c7-4791-90a6-5b40414dbe45
+
+	column Value
+		formatString: 0
+		lineageTag: b0359169-d0f9-46a5-a87c-b805123781be
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Value]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'M365 Total Activity Measures LL' = calculated
+		mode: import
+		source = { BLANK() }
+
+	annotation PBI_Id = 4b5755c0fc9c408f8d1f8a7e0acbc397
+

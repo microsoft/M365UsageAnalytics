@@ -1,0 +1,75 @@
+model Model
+	culture: en-GB
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-GB
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+/// Errors in queries that were loaded on 1/26/2026 2:32:17 PM.
+queryGroup 'Query Errors - 1/26/2026 2:32:17 PM'
+
+	annotation PBI_QueryGroupOrder = 2
+
+annotation __PBI_TimeIntelligenceEnabled = 1
+
+annotation PBI_QueryOrder = ["SecDemEntraUsers","SecDemoM365Usage","Errors in SecDemoM365Usage","Priority List","Action Filter"]
+
+annotation PBI_ProTooling = ["MCP-PBIModeling","DevMode"]
+
+ref table DateTableTemplate_c83af314-0c1f-4edf-974e-e3a4a9e191c9
+ref table 'View By (User Level) LL'
+ref table 'View By (Organisational Data) LL'
+ref table 'Activity Type'
+ref table 'Organization Measures LL'
+ref table 'Tier Reference'
+ref table 'Activity Distribution Measures LL'
+ref table 'App Activity LL'
+ref table Last30Days
+ref table SecDemEntraUsers
+ref table LocalDateTable_97bc1be7-5652-4d44-87d3-98dafa6fc648
+ref table 'M365 App Summary'
+ref table M365AppActivitySummary_LL
+ref table 'Outlook Activity Summary LL'
+ref table 'BrowserActivitySummary LL'
+ref table 'OS ActivitySummary LL'
+ref table 'Word Activity Summary LL'
+ref table 'Excel Activity Summary LL'
+ref table 'PowerPoint Activity Summary LL'
+ref table 'SharePoint Activity Summary LL'
+ref table 'M365 Total Activity Measures LL'
+ref table 'Word Activity by App Summary LL'
+ref table 'Excel Activity by App Summary LL'
+ref table 'PowerPoint Activity by App Summary LL'
+ref table 'Copilot Qualification Criteria LL'
+ref table 'Teams Activity Summary LL'
+ref table LocalDateTable_fc70000c-1411-4fa5-b7f0-d2873856f952
+ref table SecDemoM365Usage
+ref table LocalDateTable_522ea86a-24e9-4ff9-aab0-99205813ddbc
+ref table LocalDateTable_8bffc73f-7959-42fd-982b-1a5268b8a10f
+ref table LocalDateTable_a18699e4-8385-411f-b3b9-4eb7de0bfd3b
+ref table LocalDateTable_9c82cff0-40c9-442c-b6da-e60968f6f948
+ref table LocalDateTable_4059ae2b-73ff-428f-90f0-74fa2393abd6
+ref table 'Teams Weight %'
+ref table 'Outlook Weight %'
+ref table 'Word Weight %'
+ref table 'Excel Weight %'
+ref table 'PowerPoint Weight %'
+ref table 'M365 ActiveDaysSummary'
+ref table 'Copilot Measures'
+ref table 'App Selection'
+ref table 'M365 Tiers'
+ref table 'Copilot Tiers'
+ref table 'Priority Filter'
+ref table 'User Priority Summary'
+ref table 'Priority List'
+ref table 'Action Filter'
+ref table 'App Actions Table'
+ref table 'LP Weight Profiles'
+ref table 'LP Measures'
+ref table 'LP Action Categories'
+ref table 'Copilot Chat Weight %'
+ref table 'CE Quadrant Selection'
+
+ref cultureInfo en-GB
+
