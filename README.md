@@ -6,7 +6,7 @@
 
 **Identify which users are ready for Microsoft Copilot licensing—and build a prioritized, data-driven adoption strategy from your own M365 Unified Audit Log.**
 
-### 📥 [Click Here to Download All Files](https://github.com/microsoft/AI-in-One-Dashboard/archive/refs/heads/main.zip)
+### 📥 [Click Here to Download All Files](https://github.com/microsoft/M365UsageAnalytics/archive/refs/heads/main.zip)
 
 **Related Templates & Tools:**
 
