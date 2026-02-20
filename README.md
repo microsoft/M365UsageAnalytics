@@ -24,15 +24,6 @@
 
 </div>
 
-<details open>
-  <summary>▶️ <b>M365 Copilot Readiness Report Preview</b></summary>
-
-  <br>
-
-  <img src="images/preview.gif" alt="M365 Copilot Readiness Report Preview" width="100%" />
-
-</details>
-
 ---
 
 <details open>
@@ -59,7 +50,7 @@ How are users distributed across engagement segments? Is engagement trending up 
 ---
 
 <details>
-<summary><strong>🖥️ Report Pages Overview</strong></summary>
+<summary><strong style="font-size:1.5em;">🖥️ Report Pages Overview</strong></summary>
 
 <br>
 
@@ -132,13 +123,8 @@ In-report reference covering every metric, quadrant, tier label, and scoring met
 
 ---
 
-<details open>
+<details>
 <summary><strong style="font-size:1.5em;">📋 Instructions</strong></summary>
-
-<br>
-
-<details open>
-<summary><strong>Written Setup Guide</strong></summary>
 
 <br>
 
@@ -443,12 +429,10 @@ Use the report pages in this order to tell a complete Copilot readiness story:
 
 </details>
 
-</details>
-
 ---
 
 <details>
-<summary><strong>🤓 Nerd Corner</strong></summary>
+<summary><strong style="font-size:1.5em;">🤓 Nerd Corner</strong></summary>
 
 <br>
 
@@ -466,7 +450,7 @@ Also see [`docs/M365_MCode_Build_Strategy.md`](docs/M365_MCode_Build_Strategy.md
 ---
 
 <details>
-<summary><strong>💬 Feedback</strong></summary>
+<summary><strong style="font-size:1.5em;">💬 Feedback</strong></summary>
 
 <br>
 
@@ -477,7 +461,7 @@ Managed and released by the Microsoft Copilot Growth ROI Advisory Team. Please r
 ---
 
 <details>
-<summary><strong>🔔 Stay Updated</strong></summary>
+<summary><strong style="font-size:1.5em;">🔔 Stay Updated</strong></summary>
 
 <br>
 
