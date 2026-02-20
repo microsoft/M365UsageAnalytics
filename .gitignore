@@ -1,0 +1,3 @@
+# Ignore temp and _Chat_Backup folders entirely
+temp/
+_Chat_Backup/
