@@ -51,14 +51,16 @@ How are users distributed across engagement segments? Is engagement trending up 
 
 | Report Page | What You Can Answer |
 |---|---|
-| **Executive Summary** | What is our overall M365 adoption rate? Which apps are driving the most engagement? |
+| **M365 App Usage Report** | What is our overall M365 adoption rate? Which apps are driving the most engagement? |
 | **M365 Usage Trends** | How is activity trending week over week? Which apps dominate the workload mix? |
 | **Copilot License Recommendations** | Who should get a Copilot license first based on weighted M365 usage? |
 | **Copilot Enablement Strategy** | Where are the biggest gaps between M365 usage and Copilot adoption? Who are Champions vs. Enablement Targets? |
-| **Glossary & Definitions** | Definitions for all metrics, tiers, engagement segments, and scoring methodology in the dashboard. |
+| **Glossary and Metric Definitions** | Definitions for all metrics, tiers, engagement segments, and scoring methodology in the dashboard. |
 | **M365 Usage Activity** | How are users distributed across engagement segments? Are Copilot-licensed users more active? |
 | **Enablement Strategy — Priority Table** | Which users need training most urgently? What is each user's recommended next action? |
-| **Copilot Licensing Strategy** | Which users should be licensed in each wave? How do users rank across all M365 apps? |
+| **M365 Copilot Licensing Strategy** | Which users should be licensed in each wave? How do users rank across all M365 apps? |
+
+<br>
 
 </details>
 
@@ -69,19 +71,19 @@ How are users distributed across engagement segments? Is engagement trending up 
 
 <br>
 
-The dashboard includes **8 interactive report pages**. The slideshow below cycles through each page automatically (3 seconds per slide). Click the image to view it full-size. See the [Interpretation Guide](M365%20Usage%20Dashboard%20-%20Interpretation%20Guide%20-%2009%20March%202026.pdf) for a detailed walkthrough of each page.
+The dashboard includes **8 interactive report pages**. The slideshow below cycles through each page automatically. See the [Interpretation Guide](M365%20Usage%20Dashboard%20-%20Interpretation%20Guide%20-%2009%20March%202026.pdf) for a detailed walkthrough of each page.
 
 [![Report Pages Slideshow](images/report-pages-carousel.gif)](images/report-pages-carousel.gif)
-*💡 Click the slideshow or any screenshot below to view it full-size.*
+*💡 Expand any report page section below to view a full-size still screenshot.*
 
 ---
 
 <details>
-<summary><strong>1. Executive Summary</strong></summary>
+<summary><strong>1. M365 App Usage Report</strong></summary>
 
 Your landing page — six headline KPI cards (total M365 users, Teams activity, email activity, document activity, Copilot users, and departments tracked), a stacked bar chart breaking down total events by app and action type, and a Report Highlights panel linking to the dashboard's four main analytical sections.
 
-[![Executive Summary](images/1-Executive%20Summary.png)](images/1-Executive%20Summary.png)
+[![M365 App Usage Report](images/1%20-%20M365%20App%20Usage%20Report.png)](images/1%20-%20M365%20App%20Usage%20Report.png)
 *Click image to enlarge*
 
 </details>
@@ -91,7 +93,7 @@ Your landing page — six headline KPI cards (total M365 users, Teams activity, 
 
 Headline KPIs for total users, active users, all-app actions, and average actions per user. A ranked bar chart shows which apps drive the most total activity, a donut chart highlights each app's proportional share, and a week-over-week trend line tracks average actions per app over time. A tier distribution matrix segments users into Top 10%, 10–25%, 25–50%, and Bottom 50% per application.
 
-[![M365 Usage Trends](images/2-M365%20Usage%20Trends.png)](images/2-M365%20Usage%20Trends.png)
+[![M365 Usage Trends](images/2%20-%20M365%20Usage%20Trends.png)](images/2%20-%20M365%20Usage%20Trends.png)
 *Click image to enlarge*
 
 </details>
@@ -101,7 +103,7 @@ Headline KPIs for total users, active users, all-app actions, and average action
 
 Every user ranked by a weighted composite score (0–100) blending their percentile across selected M365 apps. Choose from four profile presets — Balanced, Collaboration Focus, Content Creation, or Custom — to model different licensing scenarios. Users are classified into action categories: License First (≥90th percentile), License Next (75th–89th), Potential (50th–74th), and Developing (<50th). A Customize Weight panel lets you manually adjust per-app weights.
 
-[![Copilot License Recommendations](images/3-Copilot%20License%20Recommendations.png)](images/3-Copilot%20License%20Recommendations.png)
+[![Copilot License Recommendations](images/3%20-%20Copilot%20License%20Recommendations.png)](images/3%20-%20Copilot%20License%20Recommendations.png)
 *Click image to enlarge*
 
 </details>
@@ -111,17 +113,17 @@ Every user ranked by a weighted composite score (0–100) blending their percent
 
 A 2×2 quadrant model classifying every user into four segments: **Enablement Targets** (high M365 / low Copilot — best training candidates), **Champions** (high on both — peer advocates), **AI-First** (low M365 / high Copilot), and **Low Engagement** (low on both). Filter by app to see workflow-specific quadrants, and sort by the Enablement Gap column to find users with the largest gap between M365 activity and Copilot adoption.
 
-[![Copilot Enablement Strategy](images/4-Copilot%20Enablement%20Strategy.png)](images/4-Copilot%20Enablement%20Strategy.png)
+[![Copilot Enablement Strategy](images/4%20-%20Copilot%20Enablement%20Strategy.png)](images/4%20-%20Copilot%20Enablement%20Strategy.png)
 *Click image to enlarge*
 
 </details>
 
 <details>
-<summary><strong>5. Glossary & Definitions</strong></summary>
+<summary><strong>5. Glossary and Metric Definitions</strong></summary>
 
 In-report reference covering every metric, quadrant, tier label, engagement segment, and scoring methodology used across the dashboard. Includes definitions for active days, app tiers, composite scores, enablement gaps, and action categories so the report can be shared broadly without external documentation.
 
-[![Glossary & Definitions](images/5-Glossary%20%26%20Definitions.png)](images/5-Glossary%20%26%20Definitions.png)
+[![Glossary and Metric Definitions](images/5%20-%20Glossary%20and%20Metric%20Definitions.png)](images/5%20-%20Glossary%20and%20Metric%20Definitions.png)
 *Click image to enlarge*
 
 </details>
@@ -131,7 +133,7 @@ In-report reference covering every metric, quadrant, tier label, engagement segm
 
 Four KPI cards covering total users, M365 actions, average actions per week, and average active days. A bar chart ranks apps by average active days per user per week, and a segmentation chart groups users by engagement level — Daily (20+ days), Frequent (11–19), Moderate (6–10), Infrequent (1–5), and Inactive (0). A comparison chart shows whether Copilot-licensed users are more active than unlicensed users.
 
-[![M365 Usage Activity](images/6-M365%20Usage%20Activity.png)](images/6-M365%20Usage%20Activity.png)
+[![M365 Usage Activity](images/6%20-%20M365%20Usage%20Activity.png)](images/6%20-%20M365%20Usage%20Activity.png)
 *Click image to enlarge*
 
 </details>
@@ -141,20 +143,22 @@ Four KPI cards covering total users, M365 actions, average actions per week, and
 
 Each user assigned a Priority level (Critical, High, Medium, Promoter, Low) and a recommended Action (Immediate Training, Train Next, Advanced Training, Monitor) based on the ratio of M365 activity to Copilot usage. App Tier and Copilot Tier columns show each user's relative standing. Filter by app and priority level to generate targeted training outreach lists.
 
-[![Copilot Enablement Strategy — Priority Table](images/7-Copilot%20Enablement%20Strategy%20-%20Priority%20Table.png)](images/7-Copilot%20Enablement%20Strategy%20-%20Priority%20Table.png)
+[![Copilot Enablement Strategy — Priority Table](images/7%20-%20Copilot%20Enablement%20Strategy%20-%20Priority%20Table.png)](images/7%20-%20Copilot%20Enablement%20Strategy%20-%20Priority%20Table.png)
 *Click image to enlarge*
 
 </details>
 
 <details>
-<summary><strong>8. Copilot Licensing Strategy</strong></summary>
+<summary><strong>8. M365 Copilot Licensing Strategy</strong></summary>
 
 A tier-based licensing planner with four waves: **Prioritize** (top M365 users — license immediately), **License Next** (strong candidates for the next quarter), **Enablement** (moderate usage — train before licensing), and **Monitor** (low activity — revisit later). Color-coded cells show each user's tier in Teams, Outlook, Word, Excel, and PowerPoint. Filter by action tier to export ready-made licensing request lists.
 
-[![Copilot Licensing Strategy](images/8-Copilot%20Licensing%20Strategy.png)](images/8-Copilot%20Licensing%20Strategy.png)
+[![M365 Copilot Licensing Strategy](images/8%20-%20M365%20Copilot%20Licensing%20Strategy.png)](images/8%20-%20M365%20Copilot%20Licensing%20Strategy.png)
 *Click image to enlarge*
 
 </details>
+
+<br>
 
 </details>
 
@@ -194,6 +198,8 @@ Each user receives a percentile rank within each M365 app relative to all other 
 [![How Weighting Works](images/How-Weighting-Works.png)](images/How-Weighting-Works.png)
 *Click image to enlarge*
 
+<br>
+
 </details>
 
 ---
@@ -209,6 +215,8 @@ Before you begin, make sure you have:
 - [ ] Required roles assigned (see below)
 - [ ] PowerShell 7+ installed (for data pull scripts)
 - [ ] Python 3.9+ installed (for the Purview data explosion processor)
+
+<br>
 
 </details>
 
@@ -277,6 +285,8 @@ Audit log data is not available instantly. Retention periods depend on your Micr
 > **Note:** The default retention for Audit (Standard) changed from 90 days to 180 days on October 17, 2023. The 10-year maximum requires the **10-Year Audit Log Retention** add-on license in addition to E5.
 
 Confirm your license tier before pulling data to understand how far back your audit logs are available.
+
+<br>
 
 </details>
 
@@ -650,6 +660,8 @@ To update the dashboard with newer data:
 
 The dashboard does not connect live to Purview or Entra — all data is a point-in-time CSV export. To see updated activity, you need to replace the CSV files and refresh the report.
 
+<br>
+
 </details>
 
 ---
@@ -718,6 +730,8 @@ See [`docs/M365_MCode_Troubleshooting.md`](docs/M365_MCode_Troubleshooting.md) f
 
 </details>
 
+<br>
+
 </details>
 
 ---
@@ -767,6 +781,8 @@ Use the report pages in this order to tell a complete Copilot readiness story:
 
 </details>
 
+<br>
+
 </details>
 
 ---
@@ -780,6 +796,8 @@ Managed and released by the Microsoft Copilot Growth ROI Advisory Team. Please r
 
 For questions about the **Purview export scripts** — see the [PAX repository](https://github.com/microsoft/PAX).
 
+<br>
+
 </details>
 
 ---
@@ -792,6 +810,8 @@ For questions about the **Purview export scripts** — see the [PAX repository](
 - ⭐ **Star this repository** to receive notifications about new template versions
 - 👀 **Watch** for updates and announcements
 - 🔄 Check back regularly for new features and improvements
+
+<br>
 
 </details>
 
