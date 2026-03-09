@@ -4,14 +4,15 @@ This project has adopted the [Microsoft Open Source Code of Conduct](https://ope
 
 ## Project Contributors
 
-The following have contributed to the Portable Audit eXporter (PAX) project:
+The following have contributed to this project:
 
 ### Core Development Team
 
 - **Microsoft Copilot ROI Analysis Team** - Developer
   - Initial project design and implementation
-  - Core PowerShell script development
+  - Core solution development
   - Documentation and maintenance
+  - [copilot-roi-advisory-team-gh@microsoft.com](mailto:copilot-roi-advisory-team-gh@microsoft.com)
 
 ---
 
