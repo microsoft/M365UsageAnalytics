@@ -69,79 +69,92 @@ How are users distributed across engagement segments? Is engagement trending up 
 
 <br>
 
-The dashboard includes **8 interactive report pages**. See the [Interpretation Guide](M365%20Usage%20Dashboard%20-%20Interpretation%20Guide%20-%2009%20March%202026.pdf) for a detailed walkthrough of each page.
+The dashboard includes **8 interactive report pages**. The slideshow below cycles through each page automatically (3 seconds per slide). Click the image to view it full-size. See the [Interpretation Guide](M365%20Usage%20Dashboard%20-%20Interpretation%20Guide%20-%2009%20March%202026.pdf) for a detailed walkthrough of each page.
+
+[![Report Pages Slideshow](images/report-pages-carousel.gif)](images/report-pages-carousel.gif)
+*💡 Click the slideshow or any screenshot below to view it full-size.*
 
 ---
 
-### 1. Executive Summary
+<details>
+<summary><strong>1. Executive Summary</strong></summary>
 
 Your landing page — six headline KPI cards (total M365 users, Teams activity, email activity, document activity, Copilot users, and departments tracked), a stacked bar chart breaking down total events by app and action type, and a Report Highlights panel linking to the dashboard's four main analytical sections.
 
 [![Executive Summary](images/1-Executive%20Summary.png)](images/1-Executive%20Summary.png)
 *Click image to enlarge*
 
----
+</details>
 
-### 2. M365 Usage Trends
+<details>
+<summary><strong>2. M365 Usage Trends</strong></summary>
 
 Headline KPIs for total users, active users, all-app actions, and average actions per user. A ranked bar chart shows which apps drive the most total activity, a donut chart highlights each app's proportional share, and a week-over-week trend line tracks average actions per app over time. A tier distribution matrix segments users into Top 10%, 10–25%, 25–50%, and Bottom 50% per application.
 
 [![M365 Usage Trends](images/2-M365%20Usage%20Trends.png)](images/2-M365%20Usage%20Trends.png)
 *Click image to enlarge*
 
----
+</details>
 
-### 3. Copilot License Recommendations
+<details>
+<summary><strong>3. Copilot License Recommendations</strong></summary>
 
 Every user ranked by a weighted composite score (0–100) blending their percentile across selected M365 apps. Choose from four profile presets — Balanced, Collaboration Focus, Content Creation, or Custom — to model different licensing scenarios. Users are classified into action categories: License First (≥90th percentile), License Next (75th–89th), Potential (50th–74th), and Developing (<50th). A Customize Weight panel lets you manually adjust per-app weights.
 
 [![Copilot License Recommendations](images/3-Copilot%20License%20Recommendations.png)](images/3-Copilot%20License%20Recommendations.png)
 *Click image to enlarge*
 
----
+</details>
 
-### 4. Copilot Enablement Strategy
+<details>
+<summary><strong>4. Copilot Enablement Strategy</strong></summary>
 
 A 2×2 quadrant model classifying every user into four segments: **Enablement Targets** (high M365 / low Copilot — best training candidates), **Champions** (high on both — peer advocates), **AI-First** (low M365 / high Copilot), and **Low Engagement** (low on both). Filter by app to see workflow-specific quadrants, and sort by the Enablement Gap column to find users with the largest gap between M365 activity and Copilot adoption.
 
 [![Copilot Enablement Strategy](images/4-Copilot%20Enablement%20Strategy.png)](images/4-Copilot%20Enablement%20Strategy.png)
 *Click image to enlarge*
 
----
+</details>
 
-### 5. Glossary & Definitions
+<details>
+<summary><strong>5. Glossary & Definitions</strong></summary>
 
 In-report reference covering every metric, quadrant, tier label, engagement segment, and scoring methodology used across the dashboard. Includes definitions for active days, app tiers, composite scores, enablement gaps, and action categories so the report can be shared broadly without external documentation.
 
 [![Glossary & Definitions](images/5-Glossary%20%26%20Definitions.png)](images/5-Glossary%20%26%20Definitions.png)
 *Click image to enlarge*
 
----
+</details>
 
-### 6. M365 Usage Activity
+<details>
+<summary><strong>6. M365 Usage Activity</strong></summary>
 
 Four KPI cards covering total users, M365 actions, average actions per week, and average active days. A bar chart ranks apps by average active days per user per week, and a segmentation chart groups users by engagement level — Daily (20+ days), Frequent (11–19), Moderate (6–10), Infrequent (1–5), and Inactive (0). A comparison chart shows whether Copilot-licensed users are more active than unlicensed users.
 
 [![M365 Usage Activity](images/6-M365%20Usage%20Activity.png)](images/6-M365%20Usage%20Activity.png)
 *Click image to enlarge*
 
----
+</details>
 
-### 7. Copilot Enablement Strategy — Priority Table
+<details>
+<summary><strong>7. Copilot Enablement Strategy — Priority Table</strong></summary>
 
 Each user assigned a Priority level (Critical, High, Medium, Promoter, Low) and a recommended Action (Immediate Training, Train Next, Advanced Training, Monitor) based on the ratio of M365 activity to Copilot usage. App Tier and Copilot Tier columns show each user's relative standing. Filter by app and priority level to generate targeted training outreach lists.
 
 [![Copilot Enablement Strategy — Priority Table](images/7-Copilot%20Enablement%20Strategy%20-%20Priority%20Table.png)](images/7-Copilot%20Enablement%20Strategy%20-%20Priority%20Table.png)
 *Click image to enlarge*
 
----
+</details>
 
-### 8. Copilot Licensing Strategy
+<details>
+<summary><strong>8. Copilot Licensing Strategy</strong></summary>
 
 A tier-based licensing planner with four waves: **Prioritize** (top M365 users — license immediately), **License Next** (strong candidates for the next quarter), **Enablement** (moderate usage — train before licensing), and **Monitor** (low activity — revisit later). Color-coded cells show each user's tier in Teams, Outlook, Word, Excel, and PowerPoint. Filter by action tier to export ready-made licensing request lists.
 
 [![Copilot Licensing Strategy](images/8-Copilot%20Licensing%20Strategy.png)](images/8-Copilot%20Licensing%20Strategy.png)
 *Click image to enlarge*
+
+</details>
 
 </details>
 
