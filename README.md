@@ -242,6 +242,8 @@ To search and export audit logs through the [Microsoft Purview compliance portal
 
 #### Script Export ([PAX](https://github.com/microsoft/PAX) / Microsoft Graph API)
 
+[**PAX (Purview Audit Log Processor)**](https://github.com/microsoft/PAX) is a free, open-source PowerShell script that automates pulling audit log data from Microsoft Purview. Instead of manually searching and exporting through the Purview portal, PAX handles everything for you — it connects to the Microsoft Graph API, runs the queries, and saves the results to CSV files ready for analysis. You don't have to use PAX; any script or tool that exports Purview audit data will work with this dashboard, as long as the output includes the required operation types listed below. PAX is simply provided as a ready-made option so you don't have to build your own.
+
 The PAX script uses the [Microsoft Graph Security Audit Log Query API](https://learn.microsoft.com/en-us/graph/api/security-auditcoreroot-post-auditlogqueries) to retrieve audit data. The following **Microsoft Graph API permissions** are required:
 
 | Permission | Purpose | Required? |
@@ -259,7 +261,7 @@ These permissions apply to both **Delegated** (interactive sign-in) and **Applic
 
 > **Purview Audit Reader Role (Delegated Auth Only):** When running the PAX script with interactive authentication (WebLogin, DeviceCode, Credential), the user must also be assigned the **Purview Audit Reader** role so the Exchange audit backend recognizes them as authorized. This role is **not required** for application-only authentication (`-Auth AppRegistration`).
 
-> **📚 Reference:** [Create auditLogQuery — Permissions](https://learn.microsoft.com/en-us/graph/api/security-auditcoreroot-post-auditlogqueries#permissions) · [Get auditLogQuery — Permissions](https://learn.microsoft.com/en-us/graph/api/security-auditlogquery-get#permissions) · [PAX Prerequisites](https://github.com/microsoft/PAX)
+> **📚 Reference:** [PAX Script Documentation](https://github.com/microsoft/PAX) · [Create auditLogQuery — Permissions](https://learn.microsoft.com/en-us/graph/api/security-auditcoreroot-post-auditlogqueries#permissions) · [Get auditLogQuery — Permissions](https://learn.microsoft.com/en-us/graph/api/security-auditlogquery-get#permissions)
 
 ### 2. Entra ID User & Licensing Data
 
@@ -372,7 +374,7 @@ The following operation types are required by this dashboard. They match exactly
 
 **Record types** (needed for API-level filtering): ExchangeAdmin, ExchangeItem, ExchangeMailbox, SharePointFileOperation, SharePointSharingOperation, SharePoint, OneDrive, MicrosoftTeams, OfficeNative, MicrosoftForms, MicrosoftStream, PlannerPlan, PlannerTask, PowerAppsApp
 
-> 📖 **Source:** [PAX `-IncludeM365Usage` documentation](https://github.com/microsoft/PAX)
+> 📖 **Source:** [PAX Script Documentation](https://github.com/microsoft/PAX)
 
 </details>
 
@@ -400,16 +402,16 @@ The [PAX Purview Audit Log Processor](https://github.com/microsoft/PAX) is an op
 
 1. **Download the script** from the [PAX GitHub repository](https://github.com/microsoft/PAX) — download the latest version of the `PAX_Purview_Audit_Log_Processor` script
 
-2. **Run the script with the `-IncludeM365Usage` switch** to include all M365 usage activity types:
+2. **Run the script with the `-IncludeM365Usage` and `-CombineOutput` switches** — `-IncludeM365Usage` includes all M365 usage activity types, and `-CombineOutput` combines them into a single CSV file (without it, each of the 100+ operation types produces a separate file):
 
    **Interactive web login (easiest — no app registration required):**
    ```powershell
-   .\PAX_Purview_Audit_Log_Processor.ps1 -IncludeM365Usage -StartDate "2025-01-01" -EndDate "2025-06-30"
+   .\PAX_Purview_Audit_Log_Processor.ps1 -IncludeM365Usage -CombineOutput -StartDate "2025-01-01" -EndDate "2025-06-30"
    ```
 
    **App Registration (for scheduled / unattended runs):**
    ```powershell
-   .\PAX_Purview_Audit_Log_Processor.ps1 -ClientId "<app-id>" -TenantId "<tenant-id>" -ClientSecret "<secret>" -IncludeM365Usage -StartDate "2025-01-01" -EndDate "2025-06-30"
+   .\PAX_Purview_Audit_Log_Processor.ps1 -ClientId "<app-id>" -TenantId "<tenant-id>" -ClientSecret "<secret>" -IncludeM365Usage -CombineOutput -StartDate "2025-01-01" -EndDate "2025-06-30"
    ```
 
 3. **Locate the output** — The script outputs a CSV file to the current directory upon completion. The file path is displayed in the console output. This raw CSV will be used as input to the explosion processor in **Step 2**.
@@ -532,11 +534,13 @@ The same [PAX script](https://github.com/microsoft/PAX) used to pull Purview aud
 
 You can combine the Entra user export with the Purview audit log pull from Step 1 in a single run, or export Entra data only.
 
+> ⚠️ **Always include `-CombineOutput`** when pulling Purview audit data. The M365 usage bundle contains over 100 operation types — without `-CombineOutput`, each one produces its own CSV file. With the switch, all operation types are merged into a single Purview CSV. The Entra user data is always written to its own separate CSV regardless.
+
 **Interactive web login (easiest — no app registration required):**
 
-*Combined run — pulls both Purview audit data and Entra user/licensing details at once (separate output files are generated for each):*
+*Combined run — pulls Purview audit data and Entra user/licensing details at once. `-CombineOutput` merges all Purview operation types into a single CSV; the Entra user data is written to a separate CSV:*
 ```powershell
-.\PAX_Purview_Audit_Log_Processor.ps1 -IncludeM365Usage -IncludeUserInfo -StartDate "2025-01-01" -EndDate "2025-06-30"
+.\PAX_Purview_Audit_Log_Processor.ps1 -IncludeM365Usage -CombineOutput -IncludeUserInfo -StartDate "2025-01-01" -EndDate "2025-06-30"
 ```
 
 *Entra users and licensing only — skips the Purview audit data pull entirely:*
@@ -546,9 +550,9 @@ You can combine the Entra user export with the Purview audit log pull from Step 
 
 **App Registration (for scheduled / unattended runs):**
 
-*Combined run — pulls both Purview audit data and Entra user/licensing details at once (separate output files are generated for each):*
+*Combined run — pulls Purview audit data and Entra user/licensing details at once. `-CombineOutput` merges all Purview operation types into a single CSV; the Entra user data is written to a separate CSV:*
 ```powershell
-.\PAX_Purview_Audit_Log_Processor.ps1 -ClientId "<app-id>" -TenantId "<tenant-id>" -ClientSecret "<secret>" -IncludeM365Usage -IncludeUserInfo -StartDate "2025-01-01" -EndDate "2025-06-30"
+.\PAX_Purview_Audit_Log_Processor.ps1 -ClientId "<app-id>" -TenantId "<tenant-id>" -ClientSecret "<secret>" -IncludeM365Usage -CombineOutput -IncludeUserInfo -StartDate "2025-01-01" -EndDate "2025-06-30"
 ```
 
 *Entra users and licensing only — skips the Purview audit data pull entirely:*
@@ -560,7 +564,7 @@ You can combine the Entra user export with the Purview audit log pull from Step 
 
 **Locate the output** — The Entra user and licensing data is saved to its own CSV file, separate from the Purview audit data CSV. The file path is displayed in the console output. Use this file path as the `EntraUsers` parameter in Power BI Desktop (Step 4).
 
-> ℹ️ If you used the combined run (`-IncludeM365Usage -IncludeUserInfo`), the Purview CSV from that run still needs to be processed through the explosion script in **Step 2** before importing into Power BI. The Entra CSV does not need any additional processing.
+> ℹ️ If you used the combined run (`-IncludeM365Usage -CombineOutput -IncludeUserInfo`), the Purview CSV from that run still needs to be processed through the explosion script in **Step 2** before importing into Power BI. The Entra CSV does not need any additional processing.
 
 > 💡 The exported CSV automatically includes a `hasLicense` column that checks each user's assigned licenses and flags whether they have a Microsoft 365 Copilot license. This means the dashboard can identify Copilot-licensed users right away — no extra steps needed on your end.
 
