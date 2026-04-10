@@ -1,3 +1,5 @@
 # Ignore temp and _Chat_Backup folders entirely
 temp/
 _Chat_Backup/
+scripts/Purview_ChatIntelligence_Processor_v1.0.0.py
+

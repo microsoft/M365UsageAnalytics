@@ -1,39 +1,43 @@
 <#
 .SYNOPSIS
-    PowerShell launcher for Purview_M365_Usage_Bundle_Explosion_Processor_v1.0.0.py
+    PowerShell launcher for Purview_M365_Usage_Bundle_Explosion_Processor_v2.1.0.py
 
 .DESCRIPTION
     Wrapper script that accepts PowerShell-style single-hyphen parameters, translates
-    them to Python double-hyphen equivalents, and forwards them to the Python explosion
-    processor. Ensures Python 3.9+ is available and installs orjson if missing.
+    them to Python double-hyphen equivalents, and forwards them to the Python processor.
+    Ensures Python 3.9+ is available and installs orjson if missing.
 
     Parameter name mapping (PowerShell → Python):
-      -InputPath (-input, -i)  → --input
-      -OutputPath (-output, -o) → --output
-      -PromptFilter             → --prompt-filter
-      -workers        → --workers
-      -ChunkSize      → --chunk-size
-      -quiet          → --quiet
-      -version        → --version
+      -InputPath (-input, -i)    → --input
+      -OutputDir (-output, -o)   → --output-dir
+      -Mode (-m)                 → --mode
+      -PromptFilter              → --prompt-filter
+      -Reconcile                 → --reconcile
+      -NoUserStats               → --no-userstats
+      -quiet (-q)                → --quiet
+      -version                   → --version
 
 .PARAMETER InputPath
     (Required) Path to the input Purview audit log CSV file (must contain AuditData column).
     Aliases: -input, -i
 
-.PARAMETER OutputPath
-    Path for the output exploded CSV. Default: <input_stem>_Exploded.csv
+.PARAMETER OutputDir
+    Directory for output files. Default: same directory as the input file.
     Aliases: -output, -o
+
+.PARAMETER Mode
+    Processing mode: rollup (default) or event-level.
+    Alias: -m
 
 .PARAMETER PromptFilter
     Filter Copilot messages: Prompt | Response | Both | Null
     Maps to Python's --prompt-filter.
 
-.PARAMETER workers
-    Number of parallel workers. Default: min(cpu_count, 8). Use 1 to disable parallelism.
+.PARAMETER Reconcile
+    Run sample-based reconciliation after processing to validate rollup correctness.
 
-.PARAMETER ChunkSize
-    Number of CSV rows per processing chunk. Default: 5000.
-    Maps to Python's --chunk-size.
+.PARAMETER NoUserStats
+    Skip generating UserStats and SessionCohort files (rollup mode only).
 
 .PARAMETER quiet
     Suppress progress output (only errors are printed).
@@ -43,16 +47,19 @@
     Show version and exit.
 
 .EXAMPLE
-    .\Purview_M365_Usage_Bundle_Explosion_Processor_v1.0.0.ps1 -input Purview_Export.csv
+    .\Purview_M365_Usage_Bundle_Explosion_Processor_v2.1.0.ps1 -input Purview_Export.csv
 
 .EXAMPLE
-    .\Purview_M365_Usage_Bundle_Explosion_Processor_v1.0.0.ps1 -i Purview_Export.csv -o Exploded.csv -workers 4
+    .\Purview_M365_Usage_Bundle_Explosion_Processor_v2.1.0.ps1 -i Purview_Export.csv -o ./output
 
 .EXAMPLE
-    .\Purview_M365_Usage_Bundle_Explosion_Processor_v1.0.0.ps1 -input Purview_Export.csv -PromptFilter Prompt -workers 4 -quiet
+    .\Purview_M365_Usage_Bundle_Explosion_Processor_v2.1.0.ps1 -input Purview_Export.csv -PromptFilter Prompt -quiet
+
+.EXAMPLE
+    .\Purview_M365_Usage_Bundle_Explosion_Processor_v2.1.0.ps1 -input Purview_Export.csv -NoUserStats
 
 .NOTES
-    Version: 1.0.0
+    Version: 2.1.0
     Requires: PowerShell 7+ (pwsh), Python 3.9+ on PATH
     Optional: pip install orjson (5-10x faster JSON parsing)
 
@@ -66,14 +73,18 @@ param(
     [string]$InputPath,
 
     [Alias('output','o')]
-    [string]$OutputPath,
+    [string]$OutputDir,
+
+    [Alias('m')]
+    [ValidateSet('rollup', 'event-level')]
+    [string]$Mode,
 
     [ValidateSet('Prompt', 'Response', 'Both', 'Null')]
     [string]$PromptFilter,
 
-    [int]$workers,
+    [switch]$Reconcile,
 
-    [int]$ChunkSize,
+    [switch]$NoUserStats,
 
     [Alias('q')]
     [switch]$quiet,
@@ -83,7 +94,7 @@ param(
 
 # ── Locate the Python script (same directory as this launcher) ───────────
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$PythonScript = Join-Path $ScriptDir 'Purview_M365_Usage_Bundle_Explosion_Processor_v1.0.0.py'
+$PythonScript = Join-Path $ScriptDir 'Purview_M365_Usage_Bundle_Explosion_Processor_v2.1.0.py'
 
 if (-not (Test-Path $PythonScript)) {
     Write-Host "ERROR: Python script not found at: $PythonScript" -ForegroundColor Red
@@ -147,27 +158,29 @@ if (-not $PSBoundParameters.ContainsKey('InputPath') -or [string]::IsNullOrWhite
 $pyArgs += '--input'
 $pyArgs += $InputPath
 
-if ($PSBoundParameters.ContainsKey('OutputPath')) {
-    $pyArgs += '--output'
-    $pyArgs += $OutputPath
+if ($PSBoundParameters.ContainsKey('OutputDir')) {
+    $pyArgs += '--output-dir'
+    $pyArgs += $OutputDir
+}
+if ($PSBoundParameters.ContainsKey('Mode')) {
+    $pyArgs += '--mode'
+    $pyArgs += $Mode
 }
 if ($PSBoundParameters.ContainsKey('PromptFilter')) {
     $pyArgs += '--prompt-filter'
     $pyArgs += $PromptFilter
 }
-if ($PSBoundParameters.ContainsKey('workers')) {
-    $pyArgs += '--workers'
-    $pyArgs += $workers.ToString()
+if ($Reconcile) {
+    $pyArgs += '--reconcile'
 }
-if ($PSBoundParameters.ContainsKey('ChunkSize')) {
-    $pyArgs += '--chunk-size'
-    $pyArgs += $ChunkSize.ToString()
+if ($NoUserStats) {
+    $pyArgs += '--no-userstats'
 }
 if ($quiet) {
     $pyArgs += '--quiet'
 }
 
-Write-Host "Launching Python explosion processor..." -ForegroundColor Cyan
+Write-Host "Launching Python processor..." -ForegroundColor Cyan
 Write-Host "  Python:  $PythonExe" -ForegroundColor DarkGray
 Write-Host "  Script:  $PythonScript" -ForegroundColor DarkGray
 Write-Host ""
