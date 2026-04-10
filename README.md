@@ -26,7 +26,7 @@
 | **Data Source** | Microsoft Purview — Unified Audit Log |
 | **Data Source** | Microsoft Entra ID — User Profiles |
 | **Asset** | Power BI Template (`.pbit`) |
-| **Output** | Two or more CSV files — Purview audit log export (processed through the included explosion script) and Entra user/licensing export (generated separately) |
+| **Output** | CSV files — Purview audit log export (processed through the included processor script) and Entra user/licensing export (generated separately) |
 
 ---
 
@@ -71,7 +71,7 @@ How are users distributed across engagement segments? Is engagement trending up 
 
 <br>
 
-The dashboard includes **8 interactive report pages**. The slideshow below cycles through each page automatically. See the [Interpretation Guide](M365%20Usage%20Dashboard%20-%20Interpretation%20Guide%20-%2009%20March%202026.pdf) for a detailed walkthrough of each page.
+The dashboard includes **8 interactive report pages**. The slideshow below cycles through each page automatically. See the [Interpretation Guide](M365%20Usage%20Dashboard%20-%20Interpretation%20Guide.pdf) for a detailed walkthrough of each page.
 
 [![Report Pages Slideshow](images/report-pages-carousel.gif)](images/report-pages-carousel.gif)
 *💡 Expand any report page section below to view a full-size still screenshot.*
@@ -214,7 +214,7 @@ Before you begin, make sure you have:
 - [ ] Access to **Microsoft Entra admin center** — to export user data
 - [ ] Required roles assigned (see below)
 - [ ] PowerShell 7+ installed (for data pull scripts)
-- [ ] Python 3.9+ installed (for the Purview data explosion processor)
+- [ ] Python 3.9+ installed (for the Purview data processor)
 
 <br>
 
@@ -334,7 +334,7 @@ Go to the [Microsoft Purview Portal](https://purview.microsoft.com/) and export 
 
 4. **Rename and Place the File**
    - Rename the exported file or note its exact file path
-   - This raw CSV will be used as input to the explosion processor in **Step 2**
+   - This raw CSV will be used as input to the processor in **Step 2**
 
 > ⚠️ **Important — Purview UI export row limits:**
 >
@@ -384,7 +384,7 @@ The following operation types are required by this dashboard. They match exactly
 
 The [PAX Purview Audit Log Processor](https://github.com/microsoft/PAX) is an open-source Microsoft PowerShell script that automates Purview unified audit log retrieval via the Microsoft Graph API. It runs multiple queries in parallel — automatically breaking your date range into smaller time slices, sending them simultaneously, and combining the results into a single CSV file. It handles pagination, rate limiting, and retry logic automatically, and can produce output files with tens of millions of records. When run with the `-IncludeM365Usage` switch, it pulls all the operation types this dashboard needs.
 
-> ⚠️ **Important:** Do **not** use PAX's built-in data explosion/flattening options. While PAX does offer optional explosion switches, the Python explosion processor included in this repository (Step 2) is **up to 50× faster** for large datasets. Pull the raw (unexploded) data with PAX, then run the Python script separately to flatten it.
+> ⚠️ **Important:** Do **not** use PAX's built-in data explosion/flattening options. While PAX does offer optional explosion switches, the Python processor included in this repository (Step 2) is **up to 50× faster** for large datasets. Pull the raw (unexploded) data with PAX, then run the Python script separately to process it.
 
 **Why choose this over manual exports?**
 
@@ -393,7 +393,7 @@ The [PAX Purview Audit Log Processor](https://github.com/microsoft/PAX) is an op
 - **No practical record limits** — Manual Purview exports are capped at 50K–100K rows per export; the PAX script runs parallel queries and combines the results, routinely producing files with tens of millions of records for large tenants
 - **Automatically resumes if interrupted** — If a data pull is paused or fails for any reason, the script picks up right where it left off with no lost progress
 - **Pulls exactly the right data** — Targets only the audit log activity types this dashboard requires
-  <br>*When run with the recommended settings shown in the step-by-step guide below. The raw CSV output still needs to be processed through the explosion script (Step 2) before importing into Power BI.*
+  <br>*When run with the recommended settings shown in the step-by-step guide below. The raw CSV output still needs to be processed through the processor script (Step 2) before importing into Power BI.*
 
 <details>
 <summary><strong>Detailed step-by-step guide</strong></summary>
@@ -414,7 +414,7 @@ The [PAX Purview Audit Log Processor](https://github.com/microsoft/PAX) is an op
    .\PAX_Purview_Audit_Log_Processor.ps1 -ClientId "<app-id>" -TenantId "<tenant-id>" -ClientSecret "<secret>" -IncludeM365Usage -CombineOutput -StartDate "2025-01-01" -EndDate "2025-06-30"
    ```
 
-3. **Locate the output** — The script outputs a CSV file to the current directory upon completion. The file path is displayed in the console output. This raw CSV will be used as input to the explosion processor in **Step 2**.
+3. **Locate the output** — The script outputs a CSV file to the current directory upon completion. The file path is displayed in the console output. This raw CSV will be used as input to the processor in **Step 2**.
 
 > 💡 **The PAX script can also export Entra user and licensing data** needed by this dashboard — either alongside the Purview audit data in a single run or on its own. See **Option B** in the [Export Entra User Details](#step-3-export-entra-user-details) section below for details.
 
@@ -424,9 +424,9 @@ The [PAX Purview Audit Log Processor](https://github.com/microsoft/PAX) is an op
 
 ---
 
-### Step 2. Process the Purview Export (Explosion / Flattening)
+### Step 2. Process the Purview Export
 
-The raw Purview CSV — whether exported manually from the Purview UI or pulled via the PAX script — contains a column called `AuditData` that stores each event's details as a nested JSON string. The Power BI template cannot import this raw format directly. Before loading the data into Power BI, you need to run the included Python script to “explode” (flatten) the `AuditData` JSON into individual columns that the template can read.
+The raw Purview CSV — whether exported manually from the Purview UI or pulled via the PAX script — contains a column called `AuditData` that stores each event's details as a nested JSON string. The Power BI template cannot import this raw format directly. Before loading the data into Power BI, you need to run the included Python script to process the `AuditData` JSON into the rollup format the template expects.
 
 > 💡 **Why a separate script instead of PAX's built-in explosion?** The PAX script does include optional explosion/flattening switches, but the Python processor included in this repository is **up to 50× faster** for large datasets. We recommend pulling raw (unexploded) data from Purview and then running this Python script as a separate step.
 
@@ -435,12 +435,12 @@ The raw Purview CSV — whether exported manually from the Purview UI or pulled 
 
 <br>
 
-The explosion processor is located in the [`scripts/`](scripts/) folder of this repository:
+The processor is located in the [`scripts/`](scripts/) folder of this repository:
 
 | File | Purpose |
 |---|---|
-| [`Purview_M365_Usage_Bundle_Explosion_Processor.py`](scripts/Purview_M365_Usage_Bundle_Explosion_Processor_v1.0.0.py) | Main explosion processor — flattens `AuditData` JSON into 153 individual columns |
-| [`Purview_M365_Usage_Bundle_Explosion_Processor.ps1`](scripts/Purview_M365_Usage_Bundle_Explosion_Processor_v1.0.0.ps1) | PowerShell wrapper — auto-detects Python, installs [orjson](https://pypi.org/project/orjson/) for faster parsing, then launches the Python script |
+| [`Purview_M365_Usage_Bundle_Explosion_Processor.py`](scripts/) | Main processor — parses `AuditData` JSON, aggregates events into rolled-up rows, and produces three output files for Power BI |
+| [`Purview_M365_Usage_Bundle_Explosion_Processor.ps1`](scripts/) | PowerShell wrapper — auto-detects Python, installs [orjson](https://pypi.org/project/orjson/) for faster parsing, then launches the Python script |
 
 #### Option A: Run the Python script directly
 
@@ -448,10 +448,10 @@ The explosion processor is located in the [`scripts/`](scripts/) folder of this 
 python scripts/Purview_M365_Usage_Bundle_Explosion_Processor.py --input "Purview_Export.csv"
 ```
 
-The script outputs a new CSV file named `<input_stem>_Exploded.csv` in the same folder as the input file. You can also specify a custom output path:
+The script produces three output files in the same directory as the input file, all sharing the same timestamp suffix. You can specify a different output directory:
 
 ```bash
-python scripts/Purview_M365_Usage_Bundle_Explosion_Processor.py --input "Purview_Export.csv" --output "Exploded_Output.csv"
+python scripts/Purview_M365_Usage_Bundle_Explosion_Processor.py --input "Purview_Export.csv" --output-dir ./output
 ```
 
 #### Option B: Use the PowerShell wrapper
@@ -459,33 +459,37 @@ python scripts/Purview_M365_Usage_Bundle_Explosion_Processor.py --input "Purview
 If you prefer PowerShell, the wrapper script auto-detects your Python installation, ensures [orjson](https://pypi.org/project/orjson/) is installed for optimal performance, and launches the processor for you:
 
 ```powershell
-## Exploded output file in same location as input file
+## Output files in same location as input file
 .\scripts\Purview_M365_Usage_Bundle_Explosion_Processor.ps1 -input "Purview_Export.csv"
 
-## Exploded output file with custom name and/or location
-.\scripts\Purview_M365_Usage_Bundle_Explosion_Processor.ps1 -input "Purview_Export.csv" -output "Exploded_Output.csv"
+## Output files in a different directory
+.\scripts\Purview_M365_Usage_Bundle_Explosion_Processor.ps1 -input "Purview_Export.csv" -output ./output
 ```
 
 #### What the script does
 
 - Reads each row of the raw Purview CSV and parses the `AuditData` JSON column
-- Flattens nested objects and arrays (including Copilot event data with messages, contexts, and accessed resources) into individual columns
-- Produces a new CSV with 153 columns matching the schema the Power BI template expects
-- Uses multiprocessing for fast parallel processing — handles files with millions of records efficiently
+- Flattens nested objects and arrays (including Copilot event data with messages, contexts, and accessed resources)
+- Aggregates the flattened events into rolled-up rows keyed by (UserId, CreationDate, Operation, Workload, SourceFileExtension, AppHost)
+- Produces three output CSV files (all sharing a `_<YYYYMMDD_HHMMSS>` timestamp):
+  - **Rollup** (9 columns) — aggregated event counts with min/max timestamps
+  - **UserStats** (27 columns) — one row per user with pre-computed metrics (Copilot/M365 event counts, tier classifications, priority scores, usage ranks, active-day counts, activity segments)
+  - **SessionCohort** (3 columns) — one row per (UserId, App) pair with a session-count bucket
 
 #### Optional parameters
 
 | Parameter | Description |
 |---|---|
-| `-input` / `-i` | **(Required)** Path to the raw Purview CSV |
-| `-output` / `-o` | Output file path (default: `<input>_Exploded.csv`) |
-| `-prompt-filter` | Filter Copilot messages: `Prompt`, `Response`, `Both`, or `Null` |
-| `-workers` | Number of parallel workers (default: auto-detected based on CPU cores) |
-| `-quiet` / `-q` | Suppress progress output |
+| `--input` / `-i` | **(Required)** Path to the raw Purview CSV |
+| `--output-dir` / `-o` | Directory for output files (default: same directory as the input file) |
+| `--prompt-filter` | Filter Copilot messages: `Prompt`, `Response`, `Both`, or `Null` |
+| `--no-userstats` | Skip generating UserStats and SessionCohort files |
+| `--reconcile` | Run sample-based reconciliation to validate processing correctness |
+| `--quiet` / `-q` | Suppress progress output |
 
 > 💡 **Performance tip:** The optional [orjson](https://pypi.org/project/orjson/) package provides 5–10× faster JSON parsing. The **PowerShell wrapper** (Option B) automatically detects and installs it for you. If you run the Python script directly (Option A), you can install it yourself with `pip install orjson`. The script works either way — it falls back to Python's built-in JSON parser if orjson is not available.
 
-**Locate the output** — The exploded CSV file path is displayed in the console summary. Use this file path as the `PurviewData` parameter in Power BI Desktop (Step 4).
+**Locate the output** — All three output file paths are displayed in the console summary. Use these file paths as the `PurviewData`, `UserStats`, and `SessionCohort` parameters in Power BI Desktop (Step 4).
 
 > ℹ️ **Only the Purview audit log export needs this step.** Entra user data (Step 3) can be imported into Power BI directly without any additional processing.
 
@@ -564,7 +568,7 @@ You can combine the Entra user export with the Purview audit log pull from Step 
 
 **Locate the output** — The Entra user and licensing data is saved to its own CSV file, separate from the Purview audit data CSV. The file path is displayed in the console output. Use this file path as the `EntraUsers` parameter in Power BI Desktop (Step 4).
 
-> ℹ️ If you used the combined run (`-IncludeM365Usage -CombineOutput -IncludeUserInfo`), the Purview CSV from that run still needs to be processed through the explosion script in **Step 2** before importing into Power BI. The Entra CSV does not need any additional processing.
+> ℹ️ If you used the combined run (`-IncludeM365Usage -CombineOutput -IncludeUserInfo`), the Purview CSV from that run still needs to be processed through the processor script in **Step 2** before importing into Power BI. The Entra CSV does not need any additional processing.
 
 > 💡 The exported CSV automatically includes a `hasLicense` column that checks each user's assigned licenses and flags whether they have a Microsoft 365 Copilot license. This means the dashboard can identify Copilot-licensed users right away — no extra steps needed on your end.
 
@@ -626,14 +630,16 @@ Open the `.pbit` template in Power BI Desktop and point it to the data files you
 
 1. **Open the template file**
    - Open **Power BI Desktop**
-   - Go to **File** → **Open report** → **Browse** → select [`M365 Usage Dashboard - Power BI Template.pbit`](M365%20Usage%20Dashboard%20-%20Power%20BI%20Template%20-%2009%20March%202026.pbit) from this folder
+   - Go to **File** → **Open report** → **Browse** → select [`M365 Usage Dashboard - Power BI TEMPLATE.pbit`](M365%20Usage%20Dashboard%20-%20Power%20BI%20TEMPLATE%20-%2010%20April%202026.pbit) from this folder
 
 2. **Set the Data Source Parameters**
    - Go to **Home** → **Transform data** → **Edit parameters**
    - Update the following parameters:
      | Parameter | Value |
      |---|---|
-     | `PurviewData` | Full path to the **exploded** Purview CSV (from Step 2) |
+     | `PurviewData` | Full path to the **Rollup** CSV (from Step 2) |
+     | `UserStats` | Full path to the **UserStats** CSV (from Step 2) |
+     | `SessionCohort` | Full path to the **SessionCohort** CSV (from Step 2) |
      | `EntraUsers` | Full path to your Entra user details CSV (from Step 3) |
    - Click **OK** → **Apply changes**
 
@@ -658,11 +664,13 @@ To update the dashboard with newer data:
 1. **Get fresh CSV exports** for the date range you want to analyze:
    - **Purview audit log** — either re-run the [PAX script](https://github.com/microsoft/PAX) with updated `-StartDate` / `-EndDate` parameters, or perform a new manual export from the [Purview portal](https://purview.microsoft.com/) (see Step 1)
    - **Entra user details** — re-export from the Entra Admin Center or re-run your Graph API script (see Step 3)
-2. **Re-run the explosion processor** on the new Purview CSV to flatten it (see Step 2) — Entra data does not need this step
-3. **Overwrite the CSV files** in the same folder paths your report already points to (use the exploded Purview CSV, not the raw export)
+2. **Re-run the processor** on the new Purview CSV (see Step 2) — Entra data does not need this step
+3. **Overwrite the CSV files** in the same folder paths your report already points to (use the Rollup, UserStats, and SessionCohort CSVs, not the raw export)
 4. **Open the saved `.pbix` file** in Power BI Desktop and click **Refresh**
 
 The dashboard does not connect live to Purview or Entra — all data is a point-in-time CSV export. To see updated activity, you need to replace the CSV files and refresh the report.
+
+> 💡 **Tip:** If you use the same `--output-dir` each run and your input file has the same stem, the processor appends a new timestamp to each output file. Point Power BI at the latest set of files.
 
 <br>
 
@@ -680,7 +688,7 @@ The dashboard does not connect live to Purview or Entra — all data is a point-
 
 **Cause:** The Purview CSV writes missing values as the literal text string `"null"` rather than leaving cells blank. Power BI cannot cast `"null"` to numeric or boolean types.
 
-**Fix:** This is already handled in the M Code — the `Replace Null Strings` step converts `"null"` and `"None"` text to actual nulls before type casting. If you still see errors, check that your CSV was processed through the explosion script and has the correct schema (153 columns) and that you are pointing at the right file in the parameters.
+**Fix:** This is already handled in the M Code — the `Replace Null Strings` step converts `"null"` and `"None"` text to actual nulls before type casting. If you still see errors, check that your CSV was processed through the processor script and that you are pointing at the correct Rollup CSV in the parameters.
 
 </details>
 
@@ -730,8 +738,6 @@ The dashboard does not connect live to Purview or Entra — all data is a point-
 | Report fails to open (relationship error) | Removed columns that had auto-date relationships | Remove the orphaned relationship blocks and LocalDateTable refs from `relationships.tmdl` and `model.tmdl` |
 | Slicer shows blank/garbage first item | Header row not removed after `Binary.Decompress` step | Add `Table.Skip(#"Renamed Columns", 1)` after renaming columns |
 
-See [`docs/M365_MCode_Troubleshooting.md`](docs/M365_MCode_Troubleshooting.md) for detailed diagnosis flowcharts and root cause write-ups on all known issues.
-
 </details>
 
 <br>
@@ -779,7 +785,7 @@ Use the report pages in this order to tell a complete Copilot readiness story:
 - Navigate to [Power BI Web](https://app.powerbi.com/) and locate the published Semantic Model.
 - Hover over the Semantic Model → click the **Schedule refresh** icon.
 - Configure refresh frequency (weekly recommended to stay in sync with Purview export cadence).
-- For ongoing monitoring, re-run your Purview audit log export and explosion script regularly (monthly or on a rolling schedule), overwrite the previous CSV files at the same paths, and the report will pick up the new data on next refresh.
+- For ongoing monitoring, re-run your Purview audit log export and processor script regularly (monthly or on a rolling schedule), overwrite the previous CSV files at the same paths, and the report will pick up the new data on next refresh.
 - If using the PAX script, consider scheduling it as a recurring task (e.g., Windows Task Scheduler or Azure Automation) to automate the data pipeline end to end.
 - Track changes in tier distribution over time — users moving from Bottom 50% into Top 25% is a leading indicator of Copilot adoption success.
 
