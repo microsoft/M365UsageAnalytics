@@ -2,4 +2,5 @@
 temp/
 _Chat_Backup/
 scripts/Purview_ChatIntelligence_Processor_v1.0.0.py
+scripts/__pycache__/
 
