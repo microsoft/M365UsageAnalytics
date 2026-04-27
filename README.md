@@ -21,6 +21,14 @@
 
 ---
 
+> ⚠️ **Action Required: Microsoft Graph Audit API Permission Change (April 2026)**
+>
+> Microsoft introduced a new dedicated permission, `AuditLogsQuery.Read.All`, for the Microsoft Graph audit query API and began enforcing it across all tenants in April 2026. This is a Microsoft-platform-level change that affects every tenant retrieving Copilot audit data via the Graph API, regardless of which tool is used.
+>
+> - The legacy `AuditLog.Read.All` permission is no longer sufficient to retrieve `CopilotInteraction` records via the Graph audit query API.
+> - Graph API calls made with only the legacy permission will appear to succeed but return `0` records, silently, for affected record types.
+> - If you're using [PAX v1.10.9](https://github.com/microsoft/PAX) or later to collect the audit data, it requests the correct scopes automatically. Earlier PAX versions will not return Copilot data correctly until you upgrade and grant admin consent for the new permission(s).
+
 | | |
 |---|---|
 | **Data Source** | Microsoft Purview — Unified Audit Log |
@@ -244,35 +252,34 @@ To search and export audit logs through the [Microsoft Purview compliance portal
 
 [**PAX (Purview Audit Log Processor)**](https://github.com/microsoft/PAX) is a free, open-source PowerShell script that automates pulling audit log data from Microsoft Purview. Instead of manually searching and exporting through the Purview portal, PAX handles everything for you — it connects to the Microsoft Graph API, runs the queries, and saves the results to CSV files ready for analysis. You don't have to use PAX; any script or tool that exports Purview audit data will work with this dashboard, as long as the output includes the required operation types listed below. PAX is simply provided as a ready-made option so you don't have to build your own.
 
-The PAX script uses the [Microsoft Graph Security Audit Log Query API](https://learn.microsoft.com/en-us/graph/api/security-auditcoreroot-post-auditlogqueries) to retrieve audit data. The following **Microsoft Graph API permissions** are required:
+The PAX script uses the [Microsoft Graph Security Audit Log Query API](https://learn.microsoft.com/en-us/graph/api/security-auditcoreroot-post-auditlogqueries) when running in Graph API mode. Graph API mode requests scopes conditionally based on the switches you pass. The umbrella `AuditLogsQuery.Read.All` permission is the baseline; per-workload, user-directory, and group-expansion scopes are requested only when the corresponding feature is enabled. Grant any conditional scopes for features you intend to use.
 
-| Permission | Purpose | Required? |
-|---|---|---|
-| `AuditLog.Read.All` | General audit log access | ✅ Yes |
-| `ThreatIntelligence.Read.All` | GET operations — query status checks and result retrieval | ✅ Yes |
-| `AuditLogsQuery-Entra.Read.All` | Entra ID (Azure AD) audit logs | ✅ Yes |
-| `AuditLogsQuery-Exchange.Read.All` | Exchange Online audit logs | ✅ Yes |
-| `AuditLogsQuery-OneDrive.Read.All` | OneDrive audit logs | ✅ Yes |
-| `AuditLogsQuery-SharePoint.Read.All` | SharePoint Online audit logs | ✅ Yes |
-| `Organization.Read.All` | Tenant and organization context, license metadata | ✅ Yes |
-| `User.Read.All` | Entra user directory and M365 Copilot licensing (used with `-IncludeUserInfo`) | ✅ Yes |
+**Permissions by execution mode:**
 
-These permissions apply to both **Delegated** (interactive sign-in) and **Application** (app registration) authentication modes.
-
-> **Purview Audit Reader Role (Delegated Auth Only):** When running the PAX script with interactive authentication (WebLogin, DeviceCode, Credential), the user must also be assigned the **Purview Audit Reader** role so the Exchange audit backend recognizes them as authorized. This role is **not required** for application-only authentication (`-Auth AppRegistration`).
+| Permission | Purpose | When required (Graph API) | Graph API (Delegated) | Graph API (AppRegistration) | ExchangeOnlineManagement (EOM) |
+|---|---|---|---|---|---|
+| `Graph: AuditLogsQuery.Read.All` | Umbrella permission for the Microsoft Graph audit query API — covers `CopilotInteraction` record type | Always except `-OnlyUserInfo` | ✅ Yes | ✅ Yes | — N/A |
+| `Graph: AuditLogsQuery-Exchange.Read.All` | Exchange Online audit logs | `-IncludeM365Usage` | ✅ Yes | ✅ Yes | — N/A |
+| `Graph: AuditLogsQuery-OneDrive.Read.All` | OneDrive audit logs | `-IncludeM365Usage` | ✅ Yes | ✅ Yes | — N/A |
+| `Graph: AuditLogsQuery-SharePoint.Read.All` | SharePoint Online audit logs | `-IncludeM365Usage` | ✅ Yes | ✅ Yes | — N/A |
+| `Graph: User.Read.All` | Entra user directory, MAC licensing | `-IncludeUserInfo`, `-OnlyUserInfo`, or `-GroupNames` | ✅ Yes | ✅ Yes | — N/A |
+| `Graph: Organization.Read.All` | Tenant / organization context, license metadata | `-IncludeUserInfo` or `-OnlyUserInfo` | ✅ Yes | ✅ Yes | — N/A |
+| `Graph: GroupMember.Read.All` | Group lookup and membership expansion (least privilege) | `-GroupNames` | ✅ Yes | ✅ Yes | — N/A |
+| `Purview Audit Reader` | Purview UI / EOM | EOM only | ❌ No | ❌ No | ✅ Yes |
 
 > **📚 Reference:** [PAX Script Documentation](https://github.com/microsoft/PAX) · [Create auditLogQuery — Permissions](https://learn.microsoft.com/en-us/graph/api/security-auditcoreroot-post-auditlogqueries#permissions) · [Get auditLogQuery — Permissions](https://learn.microsoft.com/en-us/graph/api/security-auditlogquery-get#permissions)
 
 ### 2. Entra ID User & Licensing Data
 
-Both export methods (manual and script) require Microsoft Graph API permissions to retrieve user profiles and licensing information:
+Manual export from the Entra admin center does not rely on the Microsoft Graph permissions below. If you retrieve Entra user, org, or licensing data through PAX or another Graph-based export, use the same conditional permission model shown above.
 
-| Permission | Purpose | Required? |
+| Permission | Purpose | When required |
 |---|---|---|
-| `User.Read.All` | Read all user profiles, department, job title, manager, account status | ✅ Yes |
-| `Organization.Read.All` | Tenant context and license SKU metadata | ✅ Yes |
+| `User.Read.All` | Read Entra user profiles and MAC licensing data | `-IncludeUserInfo`, `-OnlyUserInfo`, or `-GroupNames` |
+| `Organization.Read.All` | Read tenant context and license SKU metadata | `-IncludeUserInfo` or `-OnlyUserInfo` |
+| `GroupMember.Read.All` | Expand group names and group membership | `-GroupNames` |
 
-> **Note:** If you use the PAX script with `-IncludeUserInfo` or `-OnlyUserInfo`, these permissions are already included in the audit log permission set above — no additional configuration is needed.
+> **Note:** If you use PAX with `-IncludeUserInfo`, `-OnlyUserInfo`, or `-GroupNames`, grant the matching permissions from the execution-mode table above. If you export user data manually from the Entra admin center, these Graph API scopes are not part of that workflow.
 
 ### Audit Log Retention
 
