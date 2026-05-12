@@ -372,9 +372,9 @@ The following operation types are required by this dashboard. They match exactly
 | Category | Operations |
 |---|---|
 | **Copilot** | CopilotInteraction |
-| **Outlook / Exchange** | MailboxLogin, MailItemsAccessed, Send, SendOnBehalf, SoftDelete, HardDelete, MoveToDeletedItems, CopyToFolder |
+| **Outlook / Exchange** | MailItemsAccessed, Send, SendOnBehalf, SoftDelete, HardDelete, MoveToDeletedItems, CopyToFolder |
 | **SharePoint / OneDrive — Files** | FileAccessed, FileDownloaded, FileUploaded, FileModified, FileDeleted, FileMoved, FileCheckedIn, FileCheckedOut, FileRecycled, FileRestored, FileVersionsAllDeleted |
-| **SharePoint / OneDrive — Sharing** | SharingSet, SharingInvitationCreated, SharingInvitationAccepted, SharedLinkCreated, SharingRevoked, AddedToSecureLink, RemovedFromSecureLink, SecureLinkUsed |
+| **SharePoint / OneDrive — Sharing** | SharingInvitationCreated, SharingInvitationAccepted, SharedLinkCreated, SharingRevoked, RemovedFromSecureLink |
 | **Groups** | AddMemberToUnifiedGroup, RemoveMemberFromUnifiedGroup |
 | **Teams — Team / Channel** | TeamCreated, TeamDeleted, TeamArchived, TeamSettingChanged, TeamMemberAdded, TeamMemberRemoved, MemberAdded, MemberRemoved, MemberRoleChanged, ChannelAdded, ChannelDeleted, ChannelSettingChanged, ChannelOwnerResponded, ChannelMessageSent, ChannelMessageDeleted, BotAddedToTeam, BotRemovedFromTeam, TabAdded, TabRemoved, TabUpdated, ConnectorAdded, ConnectorRemoved, ConnectorUpdated |
 | **Teams — Chat / Messaging** | TeamsSessionStarted, ChatCreated, ChatRetrieved, ChatUpdated, MessageSent, MessageRead, MessageDeleted, MessageUpdated, MessagesListed, MessageCreation, MessageCreatedHasLink, MessageEditedHasLink, MessageHostedContentRead, MessageHostedContentsListed, SensitiveContentShared |
@@ -388,6 +388,12 @@ The following operation types are required by this dashboard. They match exactly
 
 **Record types** (needed for API-level filtering): ExchangeAdmin, ExchangeItem, ExchangeMailbox, SharePointFileOperation, SharePointSharingOperation, SharePoint, OneDrive, MicrosoftTeams, OfficeNative, MicrosoftForms, MicrosoftStream, PlannerPlan, PlannerTask, PowerAppsApp
 
+For copy/paste into the Purview UI **Activities** filter, the same operations are listed below as a single comma-separated string:
+
+```text
+MailItemsAccessed,Send,SendOnBehalf,SoftDelete,HardDelete,MoveToDeletedItems,CopyToFolder,FileAccessed,FileDownloaded,FileUploaded,FileModified,FileDeleted,FileMoved,FileCheckedIn,FileCheckedOut,FileRecycled,FileRestored,FileVersionsAllDeleted,SharingInvitationCreated,SharingInvitationAccepted,SharedLinkCreated,SharingRevoked,RemovedFromSecureLink,AddMemberToUnifiedGroup,RemoveMemberFromUnifiedGroup,TeamCreated,TeamDeleted,TeamArchived,TeamSettingChanged,TeamMemberAdded,TeamMemberRemoved,MemberAdded,MemberRemoved,MemberRoleChanged,ChannelAdded,ChannelDeleted,ChannelSettingChanged,ChannelOwnerResponded,ChannelMessageSent,ChannelMessageDeleted,BotAddedToTeam,BotRemovedFromTeam,TabAdded,TabRemoved,TabUpdated,ConnectorAdded,ConnectorRemoved,ConnectorUpdated,TeamsSessionStarted,ChatCreated,ChatRetrieved,ChatUpdated,MessageSent,MessageRead,MessageDeleted,MessageUpdated,MessagesListed,MessageCreation,MessageCreatedHasLink,MessageEditedHasLink,MessageHostedContentRead,MessageHostedContentsListed,SensitiveContentShared,MeetingCreated,MeetingUpdated,MeetingDeleted,MeetingStarted,MeetingEnded,MeetingParticipantJoined,MeetingParticipantLeft,MeetingParticipantRoleChanged,MeetingRecordingStarted,MeetingRecordingEnded,MeetingDetail,MeetingParticipantDetail,LiveNotesUpdate,AINotesUpdate,RecordingExported,TranscriptsExported,AppInstalled,AppUpgraded,AppUninstalled,CreatedApproval,ApprovedRequest,RejectedApprovalRequest,CanceledApprovalRequest,Create,Edit,Open,Save,Print,CreateForm,EditForm,DeleteForm,ViewForm,CreateResponse,SubmitResponse,ViewResponse,DeleteResponse,StreamModified,StreamViewed,StreamDeleted,StreamDownloaded,PlanCreated,PlanDeleted,PlanModified,TaskCreated,TaskDeleted,TaskModified,TaskAssigned,TaskCompleted,LaunchedApp,CreatedApp,EditedApp,DeletedApp,PublishedApp,CopilotInteraction
+```
+
 > 📖 **Source:** [PAX Script Documentation](https://github.com/microsoft/PAX)
 
 </details>
@@ -398,7 +404,7 @@ The following operation types are required by this dashboard. They match exactly
 
 The [PAX Purview Audit Log Processor](https://github.com/microsoft/PAX) is an open-source Microsoft PowerShell script that automates Purview unified audit log retrieval via the Microsoft Graph API. It runs multiple queries in parallel — automatically breaking your date range into smaller time slices, sending them simultaneously, and combining the results into a single CSV file. It handles pagination, rate limiting, and retry logic automatically, and can produce output files with tens of millions of records. When run with the `-IncludeM365Usage` switch, it pulls all the operation types this dashboard needs.
 
-> ⚠️ **Important:** Do **not** use PAX's built-in data explosion/flattening options. While PAX does offer optional explosion switches, the Python processor included in this repository (Step 2) is **up to 50× faster** for large datasets. Pull the raw (unexploded) data with PAX, then run the Python script separately to process it.
+> ✅ **End-to-end with no separate processing step.** When `-IncludeM365Usage` is combined with the `-Rollup` (or `-RollupPlusRaw`) switch, PAX automatically invokes a bundled Python post-processor that is purpose-built for this M365 Usage Analytics dashboard. It is the **same Python code** as the standalone processor in this repository's [`scripts/`](scripts/) folder — so the output is identical either way. PAX produces the three import-ready CSVs (**Rollup**, **UserStats**, **SessionCohort**) directly, and **Step 2 can be skipped**.
 
 **Why choose this over manual exports?**
 
@@ -407,30 +413,49 @@ The [PAX Purview Audit Log Processor](https://github.com/microsoft/PAX) is an op
 - **No practical record limits** — Manual Purview exports are capped at 50K–100K rows per export; the PAX script runs parallel queries and combines the results, routinely producing files with tens of millions of records for large tenants
 - **Automatically resumes if interrupted** — If a data pull is paused or fails for any reason, the script picks up right where it left off with no lost progress
 - **Pulls exactly the right data** — Targets only the audit log activity types this dashboard requires
-  <br>*When run with the recommended settings shown in the step-by-step guide below. The raw CSV output still needs to be processed through the processor script (Step 2) before importing into Power BI.*
+- **Built-in post-processing** — With `-Rollup` or `-RollupPlusRaw`, PAX produces the three import-ready CSVs this dashboard needs in a single run; no separate Step 2 required
 
 <details>
 <summary><strong>Detailed step-by-step guide</strong></summary>
 
 <br>
 
-1. **Download the script** from the [PAX GitHub repository](https://github.com/microsoft/PAX) — download the latest version of the `PAX_Purview_Audit_Log_Processor` script
+1. **Download the script** from the [PAX GitHub repository](https://github.com/microsoft/PAX) — download the latest version of the `PAX_Purview_Audit_Log_Processor` script.
 
-2. **Run the script with the `-IncludeM365Usage` and `-CombineOutput` switches** — `-IncludeM365Usage` includes all M365 usage activity types, and `-CombineOutput` combines them into a single CSV file (without it, each of the 100+ operation types produces a separate file):
+2. **Run the script with `-IncludeM365Usage` plus `-Rollup` (or `-RollupPlusRaw`)** — `-IncludeM365Usage` selects all M365 usage activity types this dashboard needs, and `-Rollup` triggers PAX's bundled Python processor (the same code as our standalone processor) to produce the three import-ready CSVs the Power BI template expects.
 
    **Interactive web login (easiest — no app registration required):**
    ```powershell
-   .\PAX_Purview_Audit_Log_Processor.ps1 -IncludeM365Usage -CombineOutput -StartDate "2025-01-01" -EndDate "2025-06-30"
+   .\PAX_Purview_Audit_Log_Processor.ps1 -IncludeM365Usage -Rollup -StartDate "2026-01-01" -EndDate "2026-06-30"
+   ```
+
+   **Keep the raw combined Purview CSV alongside the rollup files** (useful for ad-hoc analysis or auditing):
+   ```powershell
+   .\PAX_Purview_Audit_Log_Processor.ps1 -IncludeM365Usage -RollupPlusRaw -StartDate "2026-01-01" -EndDate "2026-06-30"
+   ```
+
+   **Combine with Entra user/licensing data in a single run** (covers Step 3 as well):
+   ```powershell
+   .\PAX_Purview_Audit_Log_Processor.ps1 -IncludeM365Usage -Rollup -IncludeUserInfo -StartDate "2026-01-01" -EndDate "2026-06-30"
    ```
 
    **App Registration (for scheduled / unattended runs):**
    ```powershell
-   .\PAX_Purview_Audit_Log_Processor.ps1 -ClientId "<app-id>" -TenantId "<tenant-id>" -ClientSecret "<secret>" -IncludeM365Usage -CombineOutput -StartDate "2025-01-01" -EndDate "2025-06-30"
+   .\PAX_Purview_Audit_Log_Processor.ps1 -ClientId "<app-id>" -TenantId "<tenant-id>" -ClientSecret "<secret>" -IncludeM365Usage -Rollup -IncludeUserInfo -StartDate "2026-01-01" -EndDate "2026-06-30"
    ```
 
-3. **Locate the output** — The script outputs a CSV file to the current directory upon completion. The file path is displayed in the console output. This raw CSV will be used as input to the processor in **Step 2**.
+3. **Locate the output** — On completion, PAX writes the rollup CSVs to the current directory (or `-OutputPath` if specified). All file paths are displayed in the console output. You will see three import-ready files sharing a common timestamp:
+   - **Rollup** CSV — aggregated per-user / per-app / per-day event counts
+   - **UserStats** CSV — one row per user with pre-computed metrics, tier classifications, and engagement segments
+   - **SessionCohort** CSV — one row per (UserId, App) pair with session-count buckets
 
-> 💡 **The PAX script can also export Entra user and licensing data** needed by this dashboard — either alongside the Purview audit data in a single run or on its own. See **Option B** in the [Export Entra User Details](#step-3-export-entra-user-details) section below for details.
+   With `-IncludeUserInfo` added, an additional `EntraUsers_MAClicensing_<timestamp>.csv` is produced for Step 3.
+
+4. **Skip Step 2** and go directly to **Step 4** — the rollup CSVs from PAX are already in the format the Power BI template imports. Step 2 is only needed when the raw CSV came from somewhere other than PAX (for example, a manual Purview portal export from Method 1).
+
+> 💡 **Why `-Rollup` matters.** Without `-Rollup` (or `-RollupPlusRaw`), PAX produces the raw Purview CSV with the nested `AuditData` JSON column intact — that file would still need to be processed through the standalone Python script in Step 2 before Power BI can import it. Adding `-Rollup` performs that processing inline.
+
+> 💡 **The PAX script can also export Entra user and licensing data** needed by this dashboard — either alongside the Purview audit data in a single run (shown above with `-IncludeUserInfo`) or on its own. See **Option B** in the [Export Entra User Details](#step-3-export-entra-user-details) section below for details.
 
 > 📖 See the [PAX repository](https://github.com/microsoft/PAX) for full documentation, authentication setup guides, and advanced options.
 
@@ -438,11 +463,13 @@ The [PAX Purview Audit Log Processor](https://github.com/microsoft/PAX) is an op
 
 ---
 
-### Step 2. Process the Purview Export
+### Step 2. Process the Purview Export *(only if PAX did not already do it)*
 
-The raw Purview CSV — whether exported manually from the Purview UI or pulled via the PAX script — contains a column called `AuditData` that stores each event's details as a nested JSON string. The Power BI template cannot import this raw format directly. Before loading the data into Power BI, you need to run the included Python script to process the `AuditData` JSON into the rollup format the template expects.
+The raw Purview CSV — when exported manually from the Purview portal (Method 1), or produced by any pipeline other than PAX with `-Rollup` — contains a column called `AuditData` that stores each event's details as a nested JSON string. The Power BI template cannot import this raw format directly. Run the included Python script to process the `AuditData` JSON into the three rollup CSVs the template expects.
 
-> 💡 **Why a separate script instead of PAX's built-in explosion?** The PAX script does include optional explosion/flattening switches, but the Python processor included in this repository is **up to 50× faster** for large datasets. We recommend pulling raw (unexploded) data from Purview and then running this Python script as a separate step.
+> ✅ **PAX users can skip this step.** If you ran PAX with `-IncludeM365Usage -Rollup` (or `-RollupPlusRaw`) in Step 1, the three rollup CSVs already exist — PAX invokes the same Python processor internally. Go directly to **Step 4**.
+>
+> 💡 **When you do need this step:** if you exported manually from the Purview portal (Method 1), or your pipeline produces a raw Purview CSV from another source, this script flattens it into the rollup format the template imports.
 
 <details>
 <summary><strong>Detailed step-by-step guide</strong></summary>
@@ -552,13 +579,13 @@ The same [PAX script](https://github.com/microsoft/PAX) used to pull Purview aud
 
 You can combine the Entra user export with the Purview audit log pull from Step 1 in a single run, or export Entra data only.
 
-> ⚠️ **Always include `-CombineOutput`** when pulling Purview audit data. The M365 usage bundle contains over 100 operation types — without `-CombineOutput`, each one produces its own CSV file. With the switch, all operation types are merged into a single Purview CSV. The Entra user data is always written to its own separate CSV regardless.
+> 💡 **Pair `-IncludeM365Usage` with `-Rollup`** when pulling Purview audit data so PAX produces the three import-ready CSVs this dashboard needs (Rollup, UserStats, SessionCohort) in the same run. The Entra user data is always written to its own separate CSV regardless.
 
 **Interactive web login (easiest — no app registration required):**
 
-*Combined run — pulls Purview audit data and Entra user/licensing details at once. `-CombineOutput` merges all Purview operation types into a single CSV; the Entra user data is written to a separate CSV:*
+*Combined run — pulls Purview audit data, runs the rollup post-processor, and exports Entra user/licensing details all in one shot:*
 ```powershell
-.\PAX_Purview_Audit_Log_Processor.ps1 -IncludeM365Usage -CombineOutput -IncludeUserInfo -StartDate "2025-01-01" -EndDate "2025-06-30"
+.\PAX_Purview_Audit_Log_Processor.ps1 -IncludeM365Usage -Rollup -IncludeUserInfo -StartDate "2026-01-01" -EndDate "2026-06-30"
 ```
 
 *Entra users and licensing only — skips the Purview audit data pull entirely:*
@@ -568,9 +595,9 @@ You can combine the Entra user export with the Purview audit log pull from Step 
 
 **App Registration (for scheduled / unattended runs):**
 
-*Combined run — pulls Purview audit data and Entra user/licensing details at once. `-CombineOutput` merges all Purview operation types into a single CSV; the Entra user data is written to a separate CSV:*
+*Combined run — pulls Purview audit data, runs the rollup post-processor, and exports Entra user/licensing details all in one shot:*
 ```powershell
-.\PAX_Purview_Audit_Log_Processor.ps1 -ClientId "<app-id>" -TenantId "<tenant-id>" -ClientSecret "<secret>" -IncludeM365Usage -CombineOutput -IncludeUserInfo -StartDate "2025-01-01" -EndDate "2025-06-30"
+.\PAX_Purview_Audit_Log_Processor.ps1 -ClientId "<app-id>" -TenantId "<tenant-id>" -ClientSecret "<secret>" -IncludeM365Usage -Rollup -IncludeUserInfo -StartDate "2026-01-01" -EndDate "2026-06-30"
 ```
 
 *Entra users and licensing only — skips the Purview audit data pull entirely:*
@@ -580,9 +607,9 @@ You can combine the Entra user export with the Purview audit log pull from Step 
 
 > ℹ️ The `-OnlyUserInfo` switch does not require `-StartDate` or `-EndDate` because Entra user data is not date-ranged — it always exports the current state of your directory.
 
-**Locate the output** — The Entra user and licensing data is saved to its own CSV file, separate from the Purview audit data CSV. The file path is displayed in the console output. Use this file path as the `EntraUsers` parameter in Power BI Desktop (Step 4).
+**Locate the output** — The Entra user and licensing data is saved to its own CSV file, separate from the Purview rollup CSVs. The file path is displayed in the console output. Use this file path as the `EntraUsers` parameter in Power BI Desktop (Step 4).
 
-> ℹ️ If you used the combined run (`-IncludeM365Usage -CombineOutput -IncludeUserInfo`), the Purview CSV from that run still needs to be processed through the processor script in **Step 2** before importing into Power BI. The Entra CSV does not need any additional processing.
+> ✅ When you use the combined run with `-Rollup`, the three Purview rollup CSVs from that run are import-ready — **Step 2 can be skipped**. The Entra CSV also requires no additional processing.
 
 > 💡 The exported CSV automatically includes a `hasLicense` column that checks each user's assigned licenses and flags whether they have a Microsoft 365 Copilot license. This means the dashboard can identify Copilot-licensed users right away — no extra steps needed on your end.
 
@@ -676,9 +703,9 @@ Open the `.pbit` template in Power BI Desktop and point it to the data files you
 To update the dashboard with newer data:
 
 1. **Get fresh CSV exports** for the date range you want to analyze:
-   - **Purview audit log** — either re-run the [PAX script](https://github.com/microsoft/PAX) with updated `-StartDate` / `-EndDate` parameters, or perform a new manual export from the [Purview portal](https://purview.microsoft.com/) (see Step 1)
+   - **Purview audit log** — either re-run the [PAX script](https://github.com/microsoft/PAX) with updated `-StartDate` / `-EndDate` parameters (use `-IncludeM365Usage -Rollup` to get import-ready CSVs in one shot), or perform a new manual export from the [Purview portal](https://purview.microsoft.com/) (see Step 1)
    - **Entra user details** — re-export from the Entra Admin Center or re-run your Graph API script (see Step 3)
-2. **Re-run the processor** on the new Purview CSV (see Step 2) — Entra data does not need this step
+2. **Process the Purview CSV if needed** — if you pulled with PAX using `-Rollup`, skip this; otherwise re-run the processor (see Step 2). Entra data does not need this step.
 3. **Overwrite the CSV files** in the same folder paths your report already points to (use the Rollup, UserStats, and SessionCohort CSVs, not the raw export)
 4. **Open the saved `.pbix` file** in Power BI Desktop and click **Refresh**
 
@@ -799,8 +826,8 @@ Use the report pages in this order to tell a complete Copilot readiness story:
 - Navigate to [Power BI Web](https://app.powerbi.com/) and locate the published Semantic Model.
 - Hover over the Semantic Model → click the **Schedule refresh** icon.
 - Configure refresh frequency (weekly recommended to stay in sync with Purview export cadence).
-- For ongoing monitoring, re-run your Purview audit log export and processor script regularly (monthly or on a rolling schedule), overwrite the previous CSV files at the same paths, and the report will pick up the new data on next refresh.
-- If using the PAX script, consider scheduling it as a recurring task (e.g., Windows Task Scheduler or Azure Automation) to automate the data pipeline end to end.
+- For ongoing monitoring, re-run your Purview audit log export regularly (monthly or on a rolling schedule) — and the processor script too, if you exported manually rather than using PAX with `-Rollup` — then overwrite the previous CSV files at the same paths, and the report will pick up the new data on next refresh.
+- If using the PAX script with `-IncludeM365Usage -Rollup`, the entire pipeline (pull → flatten → rollup) runs in a single command, making it ideal for scheduling as a recurring task (e.g., Windows Task Scheduler or Azure Automation) to automate the data pipeline end to end.
 - Track changes in tier distribution over time — users moving from Bottom 50% into Top 25% is a leading indicator of Copilot adoption success.
 
 </details>

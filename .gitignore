@@ -1,6 +1,13 @@
 # Ignore temp and _Chat_Backup folders entirely
 temp/
+_temp
+scripts/__pycache__
 _Chat_Backup/
 scripts/Purview_ChatIntelligence_Processor_v1.0.0.py
-scripts/__pycache__/
+scripts/Purview_CopilotInteraction_Processor_v1.0.0.py
+scripts/Purview_CopilotInteraction_Processor_v2.0.0.py
+scripts/Purview_CopilotInteraction_Processor_v3.0.0.py
+scripts/Purview_CopilotInteraction_Processor_v1.1.0.py
+scripts/Purview_CopilotInteraction_Processor_v1.1.0(1).py
+scripts/Purview_CopilotInteraction_Processor_v1.1.0(2).py
 
