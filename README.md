@@ -58,9 +58,13 @@ This section walks you through getting the dashboard running. There are **4 step
 
 ### Step 1. Export your data (Purview audit log + Entra users)
 
-You need two data exports: **(a)** your M365 Unified Audit Log from Purview, and **(b)** user details from Entra ID. The **recommended** approach gets both in a single command.
+You need two data exports:
+- **(a)** your M365 Unified Audit Log from Purview
+- **(b)** user details from Entra ID
 
-#### Recommended: PAX script (one command does everything)
+The PAX script approach gets both in a single command:
+
+#### PAX script (one command does everything — recommended)
 
 The [PAX script](https://github.com/microsoft/PAX) pulls audit data, processes it into the format Power BI needs, and exports Entra user/licensing data — all in one run. **This replaces Steps 1–3.**
 
@@ -134,21 +138,18 @@ Use this only if you cannot run the PAX script. You will need to complete Steps 
 <br>
 
 1. Go to [purview.microsoft.com](https://purview.microsoft.com/) → **Audit** → **Search**
-2. Set your **date range** (90 days recommended)
+2. Set your **date range** — 90 days or less (recommended)
 3. In **Activities**, paste the operation types from the box below — do **not** leave this blank
 4. Leave **Users** blank to capture the full tenant
 5. Click **Search** and wait for the job to complete
 6. Click the completed job → **Export results** → **Download all results**
 7. Do **not** re-save or pre-process the exported CSV — column order must be preserved exactly
 
-<details>
-<summary><strong>Copy-paste: Required operation types for the Activities filter</strong></summary>
+**Copy-paste: Required operation types for the Activities filter:**
 
 ```text
 MailItemsAccessed,Send,SendOnBehalf,SoftDelete,HardDelete,MoveToDeletedItems,CopyToFolder,FileAccessed,FileDownloaded,FileUploaded,FileModified,FileDeleted,FileMoved,FileCheckedIn,FileCheckedOut,FileRecycled,FileRestored,FileVersionsAllDeleted,SharingInvitationCreated,SharingInvitationAccepted,SharedLinkCreated,SharingRevoked,RemovedFromSecureLink,AddMemberToUnifiedGroup,RemoveMemberFromUnifiedGroup,TeamCreated,TeamDeleted,TeamArchived,TeamSettingChanged,TeamMemberAdded,TeamMemberRemoved,MemberAdded,MemberRemoved,MemberRoleChanged,ChannelAdded,ChannelDeleted,ChannelSettingChanged,ChannelOwnerResponded,ChannelMessageSent,ChannelMessageDeleted,BotAddedToTeam,BotRemovedFromTeam,TabAdded,TabRemoved,TabUpdated,ConnectorAdded,ConnectorRemoved,ConnectorUpdated,TeamsSessionStarted,ChatCreated,ChatRetrieved,ChatUpdated,MessageSent,MessageRead,MessageDeleted,MessageUpdated,MessagesListed,MessageCreation,MessageCreatedHasLink,MessageEditedHasLink,MessageHostedContentRead,MessageHostedContentsListed,SensitiveContentShared,MeetingCreated,MeetingUpdated,MeetingDeleted,MeetingStarted,MeetingEnded,MeetingParticipantJoined,MeetingParticipantLeft,MeetingParticipantRoleChanged,MeetingRecordingStarted,MeetingRecordingEnded,MeetingDetail,MeetingParticipantDetail,LiveNotesUpdate,AINotesUpdate,RecordingExported,TranscriptsExported,AppInstalled,AppUpgraded,AppUninstalled,CreatedApproval,ApprovedRequest,RejectedApprovalRequest,CanceledApprovalRequest,Create,Edit,Open,Save,Print,CreateForm,EditForm,DeleteForm,ViewForm,CreateResponse,SubmitResponse,ViewResponse,DeleteResponse,StreamModified,StreamViewed,StreamDeleted,StreamDownloaded,PlanCreated,PlanDeleted,PlanModified,TaskCreated,TaskDeleted,TaskModified,TaskAssigned,TaskCompleted,LaunchedApp,CreatedApp,EditedApp,DeletedApp,PublishedApp,CopilotInteraction
 ```
-
-</details>
 
 > ⚠️ **Row limits apply:** Audit Standard caps at 50,000 rows; Audit Premium at 100,000 rows per export. For large tenants or long date ranges, you may need multiple exports across smaller date windows. Consider using the [PAX script](#recommended-pax-script-one-command-does-everything) instead.
 
