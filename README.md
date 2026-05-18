@@ -203,14 +203,49 @@ Note the file path — you'll use it as the `EntraUsers` parameter in Step 4.
 The raw Purview CSV contains a nested `AuditData` JSON column that Power BI cannot import directly. Run the included processor to flatten it into three rollup CSVs.
 
 **Python (recommended):**
-```bash
-python scripts/Purview_M365_Usage_Bundle_Explosion_Processor.py --input "Purview_Export.csv"
+
+> 💡 **Don't have Python installed?** [Download the latest version at python.org](https://python.org).
+
+**From a Command Prompt or terminal window (recommended):**
+```cmd
+python scripts\Purview_M365_Usage_Bundle_Explosion_Processor.py --input "Purview_Export.csv"
 ```
 
+<details>
+<summary><strong>Running from a Python interactive terminal instead</strong></summary>
+
+<br>
+
+If you are already at a Python interactive prompt (`>>>`), use `subprocess` to run the script with the required arguments:
+
+```python
+import subprocess
+subprocess.run(["python", "scripts/Purview_M365_Usage_Bundle_Explosion_Processor.py", "--input", "Purview_Export.csv"])
+```
+
+</details>
+
 **PowerShell wrapper** (auto-detects Python, installs [orjson](https://pypi.org/project/orjson/) for speed):
+
+> ⚠️ **Requires PowerShell 7+.** PowerShell 5.1 (Windows PowerShell) is not supported by the wrapper script. If needed, [download and install the latest version of PowerShell](https://aka.ms/PSWindows).
+
+**From a Command Prompt or terminal window (recommended):**
+```cmd
+pwsh -ExecutionPolicy Bypass -File "scripts\Purview_M365_Usage_Bundle_Explosion_Processor.ps1" -input "Purview_Export.csv"
+```
+
+<details>
+<summary><strong>Running from a PowerShell 7 terminal window instead</strong></summary>
+
+<br>
+
+If you are already in a PowerShell 7 terminal window, run the script directly:
+
 ```powershell
 .\scripts\Purview_M365_Usage_Bundle_Explosion_Processor.ps1 -input "Purview_Export.csv"
 ```
+
+</details>
 
 Both produce three output files (with a shared `_<YYYYMMDD_HHMMSS>` timestamp):
 
