@@ -148,8 +148,16 @@ Use this only if you cannot run the PAX script. You will need to complete Steps 
 **Copy-paste: Required operation types for the Activities filter:**
 
 ```text
-MailItemsAccessed,Send,SendOnBehalf,SoftDelete,HardDelete,MoveToDeletedItems,CopyToFolder,FileAccessed,FileDownloaded,FileUploaded,FileModified,FileDeleted,FileMoved,FileCheckedIn,FileCheckedOut,FileRecycled,FileRestored,FileVersionsAllDeleted,SharingInvitationCreated,SharingInvitationAccepted,SharedLinkCreated,SharingRevoked,RemovedFromSecureLink,AddMemberToUnifiedGroup,RemoveMemberFromUnifiedGroup,TeamCreated,TeamDeleted,TeamArchived,TeamSettingChanged,TeamMemberAdded,TeamMemberRemoved,MemberAdded,MemberRemoved,MemberRoleChanged,ChannelAdded,ChannelDeleted,ChannelSettingChanged,ChannelOwnerResponded,ChannelMessageSent,ChannelMessageDeleted,BotAddedToTeam,BotRemovedFromTeam,TabAdded,TabRemoved,TabUpdated,ConnectorAdded,ConnectorRemoved,ConnectorUpdated,TeamsSessionStarted,ChatCreated,ChatRetrieved,ChatUpdated,MessageSent,MessageRead,MessageDeleted,MessageUpdated,MessagesListed,MessageCreation,MessageCreatedHasLink,MessageEditedHasLink,MessageHostedContentRead,MessageHostedContentsListed,SensitiveContentShared,MeetingCreated,MeetingUpdated,MeetingDeleted,MeetingStarted,MeetingEnded,MeetingParticipantJoined,MeetingParticipantLeft,MeetingParticipantRoleChanged,MeetingRecordingStarted,MeetingRecordingEnded,MeetingDetail,MeetingParticipantDetail,LiveNotesUpdate,AINotesUpdate,RecordingExported,TranscriptsExported,AppInstalled,AppUpgraded,AppUninstalled,CreatedApproval,ApprovedRequest,RejectedApprovalRequest,CanceledApprovalRequest,Create,Edit,Open,Save,Print,CreateForm,EditForm,DeleteForm,ViewForm,CreateResponse,SubmitResponse,ViewResponse,DeleteResponse,StreamModified,StreamViewed,StreamDeleted,StreamDownloaded,PlanCreated,PlanDeleted,PlanModified,TaskCreated,TaskDeleted,TaskModified,TaskAssigned,TaskCompleted,LaunchedApp,CreatedApp,EditedApp,DeletedApp,PublishedApp,CopilotInteraction
+MailItemsAccessed,MailboxLogin,Send,FileAccessed,FileViewed,FilePreviewed,FileModified,FileDownloaded,FileUploaded,MessageSent,MessageRead,MessagesListed,ChatRetrieved,ChatCreated,MeetingParticipantJoined,MeetingStarted,MeetingEnded,MeetingParticipantDetail,MeetingDetail,TeamsSessionStarted,CopilotInteraction,ConnectedAIAppInteraction
 ```
+
+> ℹ️ **This is the minimum set of Operations the dashboard actually reads.** The DAX measures and Power Query code in the PBIT only consume the 22 operations above. Pulling additional operations is harmless but inflates export size and Purview search time. Previously listed operations (sharing, deletion, retention, Teams admin, Office Create/Edit, Forms, Stream, Planner, PowerApps) are **not required** — they were never referenced by any visual or measure.
+>
+> ℹ️ **Casing matters.** DAX `IN { ... }` filters are case-sensitive. Use the exact CamelCase shown above (e.g. `MailItemsAccessed`, not `mailitemsaccessed`).
+>
+> ℹ️ **`ConnectedAIAppInteraction`** is required for the Copilot License Optimizer page (agents / Connected AI apps telemetry). Without it, agent attribution columns (`IsAgentInteraction`, `AgentId`, `AgentName`, `ContextType`) will be empty.
+>
+> ℹ️ **Meeting export window:** pull meeting-related operations with a **+1-day** trailing window — Purview batches meeting events up to 24 hours after the meeting ends.
 
 > ⚠️ **Row limits apply:** Audit Standard caps at 50,000 rows; Audit Premium at 100,000 rows per export. For large tenants or long date ranges, you may need multiple exports across smaller date windows. Consider using the [PAX script](#recommended-pax-script-one-command-does-everything) instead.
 
@@ -545,26 +553,25 @@ Manual export from the Entra admin center does not rely on Graph API permissions
 
 <br>
 
-These are the operation types required by this dashboard. They match what the [PAX script](https://github.com/microsoft/PAX) retrieves with `-IncludeM365Usage`. If exporting manually from Purview, you must filter to these operations.
+This is the **minimum** set of operation types the dashboard's DAX measures and Power Query code actually read. It is validated against every visual, measure, and M-query expression in the PBIT (including the Copilot License Optimizer / agents page).
 
 | Category | Operations |
 |---|---|
-| **Copilot** | CopilotInteraction |
-| **Outlook / Exchange** | MailItemsAccessed, Send, SendOnBehalf, SoftDelete, HardDelete, MoveToDeletedItems, CopyToFolder |
-| **SharePoint / OneDrive — Files** | FileAccessed, FileDownloaded, FileUploaded, FileModified, FileDeleted, FileMoved, FileCheckedIn, FileCheckedOut, FileRecycled, FileRestored, FileVersionsAllDeleted |
-| **SharePoint / OneDrive — Sharing** | SharingInvitationCreated, SharingInvitationAccepted, SharedLinkCreated, SharingRevoked, RemovedFromSecureLink |
-| **Groups** | AddMemberToUnifiedGroup, RemoveMemberFromUnifiedGroup |
-| **Teams — Team / Channel** | TeamCreated, TeamDeleted, TeamArchived, TeamSettingChanged, TeamMemberAdded, TeamMemberRemoved, MemberAdded, MemberRemoved, MemberRoleChanged, ChannelAdded, ChannelDeleted, ChannelSettingChanged, ChannelOwnerResponded, ChannelMessageSent, ChannelMessageDeleted, BotAddedToTeam, BotRemovedFromTeam, TabAdded, TabRemoved, TabUpdated, ConnectorAdded, ConnectorRemoved, ConnectorUpdated |
-| **Teams — Chat / Messaging** | TeamsSessionStarted, ChatCreated, ChatRetrieved, ChatUpdated, MessageSent, MessageRead, MessageDeleted, MessageUpdated, MessagesListed, MessageCreation, MessageCreatedHasLink, MessageEditedHasLink, MessageHostedContentRead, MessageHostedContentsListed, SensitiveContentShared |
-| **Teams — Meetings** | MeetingCreated, MeetingUpdated, MeetingDeleted, MeetingStarted, MeetingEnded, MeetingParticipantJoined, MeetingParticipantLeft, MeetingParticipantRoleChanged, MeetingRecordingStarted, MeetingRecordingEnded, MeetingDetail, MeetingParticipantDetail, LiveNotesUpdate, AINotesUpdate, RecordingExported, TranscriptsExported |
-| **Teams — Apps / Approvals** | AppInstalled, AppUpgraded, AppUninstalled, CreatedApproval, ApprovedRequest, RejectedApprovalRequest, CanceledApprovalRequest |
-| **Word, Excel, PowerPoint, OneNote** | Create, Edit, Open, Save, Print |
-| **Forms** | CreateForm, EditForm, DeleteForm, ViewForm, CreateResponse, SubmitResponse, ViewResponse, DeleteResponse |
-| **Stream** | StreamModified, StreamViewed, StreamDeleted, StreamDownloaded |
-| **Planner** | PlanCreated, PlanDeleted, PlanModified, TaskCreated, TaskDeleted, TaskModified, TaskAssigned, TaskCompleted |
-| **PowerApps** | LaunchedApp, CreatedApp, EditedApp, DeletedApp, PublishedApp |
+| **Copilot — Office in-product** | CopilotInteraction |
+| **Copilot — Agents / Connected AI apps** | ConnectedAIAppInteraction |
+| **Outlook / Exchange** | MailItemsAccessed, MailboxLogin, Send |
+| **SharePoint / OneDrive — Files** | FileAccessed, FileViewed, FilePreviewed, FileModified, FileDownloaded, FileUploaded |
+| **Teams — Messaging** | MessageSent, MessageRead, MessagesListed, ChatRetrieved, ChatCreated |
+| **Teams — Meetings** | MeetingParticipantJoined, MeetingStarted, MeetingEnded, MeetingParticipantDetail, MeetingDetail |
+| **Teams — Sessions** | TeamsSessionStarted |
 
-**Record types** (for API-level filtering): ExchangeAdmin, ExchangeItem, ExchangeMailbox, SharePointFileOperation, SharePointSharingOperation, SharePoint, OneDrive, MicrosoftTeams, OfficeNative, MicrosoftForms, MicrosoftStream, PlannerPlan, PlannerTask, PowerAppsApp
+> ℹ️ **`ConnectedAIAppInteraction`** powers the Copilot License Optimizer agents telemetry (`IsAgentInteraction`, `AgentId`, `AgentName`, `ContextType`). It is required even though it appears in some measures only as an exclusion filter — without the rows in the export, the inclusion measures return zero for Connected AI apps.
+>
+> ℹ️ **Meeting events** are batched by Purview up to 24 hours after the meeting ends. When pulling meeting-related operations, extend your export window by **+1 day** beyond the period you want to analyze.
+>
+> ℹ️ **Casing is significant.** The DAX `IN { ... }` operator is case-sensitive. Use the exact CamelCase shown above. Lowercase variants (e.g. `mailitemsaccessed`) will silently drop rows.
+
+**Record types** (for API-level filtering): ExchangeItem, SharePointFileOperation, OneDrive, MicrosoftTeams, CopilotInteraction, AIAppInteraction
 
 </details>
 
