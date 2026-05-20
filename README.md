@@ -51,6 +51,8 @@ This section walks you through getting the dashboard running. There are **4 step
 - [ ] **Python 3.9+** installed (only needed for manual Purview exports)
 - [ ] Required admin roles assigned — see [Roles & Permissions](#-roles--permissions)
 
+> 💡 **First time? Start with 1 month of data.** A 1-month time window is the recommended starting point: it loads quickly, stays well under Purview's 50K/100K row export caps for most tenants, and produces meaningful tier rankings for an initial review. For long-running production reporting, widen the window to 90+ days once you've validated the pipeline end-to-end (more history → more stable percentile-based tier ranking).
+
 > 📧 **Need your IT admin to export the data?** This pre-written email covers all required data sources, fields, roles, and steps — everything they need in one click.<br>
 > **[📨 Email Prerequisites to Your IT Admin](mailto:?subject=Action%20Required%3A%20Data%20Export%20Fields%20Needed%20for%20M365%20Copilot%20Readiness%20Report%20%28Power%20BI%29&body=To%3A%20IT%20Admin%20%2F%20Global%20Admin%0ARe%3A%20M365%20Copilot%20Readiness%20Report%20%E2%80%93%20Power%20BI%20Report%20Setup%0A%0A%0AWHAT%20THIS%20REPORT%20DOES%0A%0AThe%20M365%20Copilot%20Readiness%20Report%20is%20a%20Power%20BI%20report%20that%20turns%20your%20M365%20Unified%20Audit%20Log%20into%20a%20prioritized%2C%20tiered%20view%20of%20which%20users%20are%20ready%20for%20Copilot%20licensing.%20It%20scores%20and%20ranks%20unlicensed%20users%20by%20M365%20app%20activity%20%28Teams%2C%20Outlook%2C%20Word%2C%20Excel%2C%20PowerPoint%29%2C%20classifies%20users%20into%20enablement%20strategy%20quadrants%2C%20and%20shows%20week-over-week%20engagement%20trends%20by%20workload.%20Designed%20for%20IT%20leaders%20making%20data-driven%20Copilot%20licensing%20and%20rollout%20decisions.%0A%0A%0ADATA%20SOURCES%20REQUIRED%0A%0A1.%20Microsoft%20Purview%20%E2%80%93%20M365%20Unified%20Audit%20Log%0A%20%20%20Export%3A%20Purview%20portal%20%28purview.microsoft.com%29%20-%3E%20Audit%20-%3E%20Search%20%28all%20activities%2C%2090%20day%20range%29%20-%3E%20Export%2C%20or%20PAX%20PowerShell%20script%20with%20-IncludeM365Usage%20switch%0A%20%20%20Format%3A%20CSV%0A%0A2.%20Microsoft%20Entra%20ID%20%E2%80%93%20User%20Details%0A%20%20%20Export%3A%20entra.microsoft.com%20-%3E%20Identity%20-%3E%20Users%20-%3E%20Download%20users%2C%20or%20PAX%20script%20with%20-IncludeUserInfo%20switch%0A%20%20%20Format%3A%20CSV%0A%0A%0AREQUIRED%20FIELDS%20%E2%80%94%20DO%20NOT%20REMOVE%0A%0AIMPORTANT%3A%20This%20report%20depends%20on%20specific%20operation%20types%20from%20the%20M365%20Unified%20Audit%20Log.%20If%20you%20are%20using%20the%20PAX%20script%2C%20run%20it%20with%20the%20-IncludeM365Usage%20flag%20%E2%80%94%20this%20ensures%20the%20correct%20workload%20activity%20types%20are%20captured.%20Do%20not%20filter%20out%20operation%20types%20or%20remove%20columns%20from%20the%20exported%20file%20before%20loading%20into%20Power%20BI.%20If%20running%20a%20manual%20Purview%20export%2C%20do%20not%20pre-process%20or%20re-save%20the%20file.%20Column%20order%20and%20formatting%20must%20be%20preserved%20exactly%20as%20exported.%0A%0APurview%20Unified%20Audit%20Log%20%E2%80%94%20Required%20Columns%3A%0ACreationDate%2C%20UserIds%2C%20Operations%2C%20AuditData.%0A%0APurview%20Audit%20Log%20%E2%80%94%20Required%20Operation%20Types%20%28within%20the%20export%29%3A%0AFileAccessed%2C%20FileModified%20%28SharePoint%2FOneDrive%29%2C%20MessageSent%20%28Teams%2FExchange%29%2C%20Teams%20meeting%20events%2C%20Word%20activity%20events%2C%20Excel%20activity%20events%2C%20PowerPoint%20activity%20events%2C%20OneNote%20activity%20events.%0A%0AMicrosoft%20Entra%20ID%20%E2%80%93%20User%20Export%3A%0AUserPrincipalName%2C%20displayName%2C%20Department%2C%20JobTitle%2C%20hasLicense%20%28or%20assignedLicenses%29.%0A%0ANote%3A%20The%20hasLicense%20column%20is%20critical%20for%20license-based%20insights.%20The%20PAX%20script%20adds%20this%20automatically.%20If%20exporting%20manually%20from%20Entra%2C%20you%20must%20populate%20this%20column%20with%20True%2FFalse%20based%20on%20whether%20each%20user%20has%20a%20Microsoft%20365%20Copilot%20SKU%20assigned.%20Without%20it%2C%20the%20Enablement%20Strategy%20quadrant%20and%20LP%20Score%20ranking%20will%20not%20distinguish%20licensed%20from%20unlicensed%20users.%0A%0A%0AINSIGHTS%20YOU%20WILL%20GAIN%0A%0A-%20Composite%20Licensing%20Priority%20%28LP%29%20score%20ranking%20every%20user%20by%20their%20M365%20app%20activity%20%E2%80%94%20ready%20for%20export%20and%20stakeholder%20review%0A-%20Copilot%20Enablement%20Strategy%3A%202x2%20quadrant%20classifying%20users%20as%20Enablement%20Targets%20%28high%20M365%20%2B%20low%20Copilot%29%2C%20Champions%2C%20AI-First%2C%20or%20Low%20Engagement%0A-%205-tier%20priority%20view%3A%20Critical%2C%20High%2C%20Medium%2C%20Promoter%2C%20Low%20%E2%80%94%20based%20on%20the%20gap%20between%20M365%20engagement%20and%20Copilot%20adoption%20per%20app%0A-%20Week-over-week%20trend%20lines%20across%20Teams%2C%20Outlook%2C%20Word%2C%20Excel%2C%20and%20PowerPoint%0A-%20User%20engagement%20segmentation%3A%20Daily%2C%20Frequent%2C%20Moderate%2C%20Infrequent%2C%20Inactive%20%E2%80%94%20cross-referenced%20with%20Copilot%20license%20status%0A-%20Department-level%20engagement%20heatmaps%20and%20cold%20spots%0A%0A%0AROLES%20%26%20PERMISSIONS%20REQUIRED%0A%0AExport%20Purview%20Unified%20Audit%20Log%3A%20Audit%20Reader%20or%20Compliance%20Administrator%0AExport%20Entra%20user%20details%3A%20User%20Administrator%20or%20Global%20Reader%0ARun%20PAX%20script%20%28recommended%20for%20full%20coverage%29%3A%20Audit%20Reader%20%2B%20AuditLog.Read.All%2C%20User.Read.All%20%28Microsoft%20Graph%29%0A%0A%0ASOFTWARE%20REQUIREMENTS%0A%0A-%20Power%20BI%20Desktop%20%E2%80%94%20required%20to%20open%20the%20.pbip%20template%20file%20%28note%3A%20this%20report%20uses%20.pbip%20format%2C%20not%20.pbit%29%0A-%20PowerShell%205.1%2B%20%E2%80%94%20required%20only%20if%20using%20the%20PAX%20automated%20export%20script%0A-%20Access%20to%3A%20purview.microsoft.com%20%28or%20compliance.microsoft.com%29%2C%20entra.microsoft.com%0A%0A%0AImportant%20Notes%20on%20Export%20Size%3A%0AManual%20Purview%20exports%20are%20capped%20at%2050%2C000%20rows%20%28Audit%20Standard%29%20or%20100%2C000%20rows%20%28Audit%20Premium%29%20per%20search%20job.%20For%20tenants%20with%20high%20activity%20or%20date%20ranges%20over%2090%20days%2C%20use%20the%20PAX%20PowerShell%20script%20instead%20%E2%80%94%20it%20handles%20pagination%20automatically%20with%20no%20row%20limits%20and%20can%20be%20scheduled%20to%20run%20unattended%20on%20a%20recurring%20basis.%0A%0ARecommended%20Date%20Range%3A%0AA%20minimum%20of%2090%20days%20of%20audit%20data%20is%20required%20for%20meaningful%20tier%20ranking.%20Shorter%20ranges%20may%20classify%20all%20users%20as%20%22Developing%22%20due%20to%20insufficient%20activity%20history.)**
 
@@ -218,6 +220,42 @@ The raw Purview CSV contains a nested `AuditData` JSON column that Power BI cann
 ```cmd
 python scripts\Purview_M365_Usage_Bundle_Explosion_Processor.py --input "Purview_Export.csv"
 ```
+
+<details>
+<summary><strong>Multi-export aggregation: combining several Purview CSVs into one Rollup</strong></summary>
+
+<br>
+
+Manual Purview exports cap at 50K (Standard) or 100K (Premium) rows per search job. The recommended workaround for medium tenants is the **4-pull strategy** — run four narrower Purview searches scoped by workload, then combine them into a single Rollup CSV.
+
+**Recommended 4-pull split** (each scoped to the same 1-month window):
+
+| Pull | Activities (paste into Purview Activities filter) |
+|---|---|
+| **1. Files / SharePoint / OneDrive** | `FileAccessed, FileViewed, FilePreviewed, FileModified, FileDownloaded, FileUploaded` |
+| **2. Outlook / Mail** | `MailItemsAccessed, MailboxLogin, Send` |
+| **3. Teams / Chat** | `MessageSent, MessageRead, MessagesListed, ChatRetrieved, ChatCreated, MeetingParticipantJoined, MeetingStarted, MeetingEnded, MeetingParticipantDetail, MeetingDetail, TeamsSessionStarted` |
+| **4. Copilot + Connected AI** | `CopilotInteraction, ConnectedAIAppInteraction` |
+
+Then combine into one import-ready Rollup CSV:
+
+```cmd
+python scripts\build_rollup_combined.py rollup_combined.csv pull1_files.csv pull2_mail.csv pull3_teams.csv pull4_copilot.csv
+```
+
+**Single-file fallback** (when only one Purview CSV is available, with agent-attribution columns preserved):
+
+```cmd
+python scripts\build_rollup_with_agents.py pull.csv rollup.csv
+```
+
+**Pre-flight validator** (sanity-checks a raw Purview CSV before processing — row counts, operation distribution, AuditData JSON sample):
+
+```cmd
+python scripts\validate_purview_export.py pull.csv
+```
+
+</details>
 
 <details>
 <summary><strong>Running from a Python interactive terminal instead</strong></summary>
@@ -572,6 +610,72 @@ This is the **minimum** set of operation types the dashboard's DAX measures and 
 > ℹ️ **Casing is significant.** The DAX `IN { ... }` operator is case-sensitive. Use the exact CamelCase shown above. Lowercase variants (e.g. `mailitemsaccessed`) will silently drop rows.
 
 **Record types** (for API-level filtering): ExchangeItem, SharePointFileOperation, OneDrive, MicrosoftTeams, CopilotInteraction, AIAppInteraction
+
+</details>
+
+---
+
+## ⚠️ Known Issues & Workarounds
+
+The following are known limitations in the current PBIT release. None block successful loading or core insights, but power users should be aware of them.
+
+<details>
+<summary><strong>1. Entra portal export uses friendly column headers (e.g. "User principal name")</strong></summary>
+
+<br>
+
+**Symptom:** Manual Entra portal exports come with display-friendly column headers (`User principal name`, `Display name`, `Job title`, `Assigned licenses`) rather than the Graph API camelCase names (`userPrincipalName`, `displayName`, `jobTitle`, `assignedLicenses`). The Power Query `HeaderMap` step in the EntraUsers table normalizes the five most common variants automatically, but uncommon header variants will leave a few columns unmapped.
+
+**Workaround:** Before loading, rename the headers in Excel / your editor to match the Graph API names:
+
+| Portal header | Required name |
+|---|---|
+| `User principal name` | `userPrincipalName` |
+| `Display name` | `displayName` |
+| `Job title` | `jobTitle` |
+| `Department` | `department` |
+| `Assigned licenses` | `assignedLicenses` |
+
+Alternatively, use the [PAX script](https://github.com/microsoft/PAX) with `-IncludeUserInfo` — it emits the canonical camelCase header set directly.
+
+</details>
+
+<details>
+<summary><strong>2. License Recommendations page slicer chip displays the legacy field name</strong></summary>
+
+<br>
+
+**Symptom:** On the **License Recommendations** page, the "License status" slicer chip header still shows the legacy `hasLicense` field name.
+
+**Impact:** Cosmetic only. The page-level filter underneath correctly uses the `Has Copilot License` calculated column (`CONTAINSSTRING(EntraUsers[assignedLicenses], "Microsoft_365_Copilot")`), so the displayed user list is correct — only the slicer header label is stale.
+
+**Workaround:** None required. To rename the chip in Power BI Desktop: edit the slicer's `Title` formatting to read "Has Copilot License".
+
+</details>
+
+<details>
+<summary><strong>3. LP percentile measures filter on the legacy <code>hasLicense</code> column</strong></summary>
+
+<br>
+
+**Symptom:** Seven `LP_*` measures (the per-app Licensing Priority percentile measures) include a `FILTER(EntraUsers, EntraUsers[hasLicense] = FALSE)` clause. If the Entra export does **not** populate the `hasLicense` column (only `assignedLicenses`), the percentile cohort can be empty — producing blank or all-equal LP values.
+
+**Impact:** Tier rankings appear flat or blank when using a manual Entra portal export that omits `hasLicense`.
+
+**Workaround:** Either (a) use the PAX script with `-IncludeUserInfo`, which populates `hasLicense`; or (b) add a `hasLicense` column to your manual Entra export, computed as `TRUE` for users whose `assignedLicenses` contains the Microsoft 365 Copilot SKU.
+
+</details>
+
+<details>
+<summary><strong>4. <code>createdDateTime</code> column typed as string in the model</strong></summary>
+
+<br>
+
+**Symptom:** In the `EntraUsers` table, the `createdDateTime` column is loaded as text rather than a datetime.
+
+**Impact:** Zero impact on any current visual or measure — `createdDateTime` is not referenced anywhere in the dashboard.
+
+**Workaround:** No action needed today. If you build a custom visual that filters or sorts by account creation date, change the column type to `Date/Time` in Power Query first.
 
 </details>
 
