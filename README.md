@@ -58,20 +58,18 @@ This section walks you through getting the dashboard running. There are **4 step
 
 ---
 
-### Step 1. Export your data (Purview audit log + Entra users)
+### Step 1. Export your data
 
-You need two data exports:
-- **(a)** your M365 Unified Audit Log from Purview
-- **(b)** user details from Entra ID
+You need two data exports: **(a)** the M365 Unified Audit Log from Purview and **(b)** user details from Entra ID. Pick one of the three paths below — A is recommended.
 
-The PAX script approach gets both in a single command:
+---
 
-#### PAX script (one command does everything — recommended)
+#### Path A — PAX script (recommended, one command does everything)
 
-The [PAX script](https://github.com/microsoft/PAX) pulls audit data, processes it into the format Power BI needs, and exports Entra user/licensing data — all in one run. **This replaces Steps 1–3.**
+The [PAX script](https://github.com/microsoft/PAX) pulls audit data, processes it into the format Power BI needs, **and** exports Entra user/licensing data — all in one run. **If you can run PAX, skip Step 2 (processing) entirely and jump to Step 3.**
 
 ```powershell
-.\PAX_Purview_Audit_Log_Processor.ps1 -IncludeM365Usage -Rollup -IncludeUserInfo -StartDate "2026-01-01" -EndDate "2026-06-30"
+.\PAX_Purview_Audit_Log_Processor.ps1 -IncludeM365Usage -Rollup -IncludeUserInfo -StartDate "2026-04-21" -EndDate "2026-05-21"
 ```
 
 This produces **4 import-ready CSV files**:
@@ -83,29 +81,29 @@ This produces **4 import-ready CSV files**:
 | **SessionCohort** | One row per (UserId, App) pair with session-count buckets |
 | **EntraUsers** | User profiles with department, job title, and Copilot license status |
 
-> After the command finishes, note the file paths shown in the console output — you'll need them in **Step 4**. Then **skip directly to [Step 4](#step-4-open-in-power-bi-desktop)**.
+> After the command finishes, note the four file paths shown in the console output — you'll need them in **Step 3**. Then skip directly to **[Step 3](#step-3-open-in-power-bi-desktop)**.
 
 <details>
 <summary><strong>PAX command variations</strong></summary>
 
 <br>
 
-**Interactive web login (easiest — no app registration required):**
+**Interactive web login** (easiest — no app registration required):
 ```powershell
-.\PAX_Purview_Audit_Log_Processor.ps1 -IncludeM365Usage -Rollup -IncludeUserInfo -StartDate "2026-01-01" -EndDate "2026-06-30"
+.\PAX_Purview_Audit_Log_Processor.ps1 -IncludeM365Usage -Rollup -IncludeUserInfo -StartDate "2026-04-21" -EndDate "2026-05-21"
 ```
 
 **Keep the raw Purview CSV alongside rollup files** (useful for ad-hoc analysis):
 ```powershell
-.\PAX_Purview_Audit_Log_Processor.ps1 -IncludeM365Usage -RollupPlusRaw -IncludeUserInfo -StartDate "2026-01-01" -EndDate "2026-06-30"
+.\PAX_Purview_Audit_Log_Processor.ps1 -IncludeM365Usage -RollupPlusRaw -IncludeUserInfo -StartDate "2026-04-21" -EndDate "2026-05-21"
 ```
 
-**App Registration (for scheduled / unattended runs):**
+**App Registration** (for scheduled / unattended runs):
 ```powershell
-.\PAX_Purview_Audit_Log_Processor.ps1 -ClientId "<app-id>" -TenantId "<tenant-id>" -ClientSecret "<secret>" -IncludeM365Usage -Rollup -IncludeUserInfo -StartDate "2026-01-01" -EndDate "2026-06-30"
+.\PAX_Purview_Audit_Log_Processor.ps1 -ClientId "<app-id>" -TenantId "<tenant-id>" -ClientSecret "<secret>" -IncludeM365Usage -Rollup -IncludeUserInfo -StartDate "2026-04-21" -EndDate "2026-05-21"
 ```
 
-**Entra users only (no audit data):**
+**Entra users only** (no audit data):
 ```powershell
 .\PAX_Purview_Audit_Log_Processor.ps1 -OnlyUserInfo
 ```
@@ -130,139 +128,201 @@ This produces **4 import-ready CSV files**:
 
 ---
 
-#### Alternative: Manual export from Purview + Entra portals
+#### Path B — Manual single Purview export (small tenants only)
 
-Use this only if you cannot run the PAX script. You will need to complete Steps 1–3 separately.
-
-<details>
-<summary><strong>Step 1a. Manual Purview portal export</strong></summary>
-
-<br>
+Use this only if PAX is unavailable **and** your tenant's activity for the chosen date range fits inside a single Purview export job (50K rows for Audit Standard, 100K rows for Audit Premium). If you exceed the cap, use **Path C** instead.
 
 1. Go to [purview.microsoft.com](https://purview.microsoft.com/) → **Audit** → **Search**
-2. Set your **date range** — 90 days or less (recommended)
-3. In **Activities**, paste the operation types from the box below — do **not** leave this blank
+2. Set your **date range** (1 month recommended for the first run; expand later)
+3. In **Activities**, paste the 22 operation types from the box below — do **not** leave this blank
 4. Leave **Users** blank to capture the full tenant
 5. Click **Search** and wait for the job to complete
 6. Click the completed job → **Export results** → **Download all results**
 7. Do **not** re-save or pre-process the exported CSV — column order must be preserved exactly
 
-**Copy-paste: Required operation types for the Activities filter:**
+**Copy-paste — Activities filter (all 22 operations in one pull):**
 
 ```text
 MailItemsAccessed,MailboxLogin,Send,FileAccessed,FileViewed,FilePreviewed,FileModified,FileDownloaded,FileUploaded,MessageSent,MessageRead,MessagesListed,ChatRetrieved,ChatCreated,MeetingParticipantJoined,MeetingStarted,MeetingEnded,MeetingParticipantDetail,MeetingDetail,TeamsSessionStarted,CopilotInteraction,ConnectedAIAppInteraction
 ```
 
-> ℹ️ **This is the minimum set of Operations the dashboard actually reads.** The DAX measures and Power Query code in the PBIT only consume the 22 operations above. Pulling additional operations is harmless but inflates export size and Purview search time. Previously listed operations (sharing, deletion, retention, Teams admin, Office Create/Edit, Forms, Stream, Planner, PowerApps) are **not required** — they were never referenced by any visual or measure.
->
-> ℹ️ **Casing matters.** DAX `IN { ... }` filters are case-sensitive. Use the exact CamelCase shown above (e.g. `MailItemsAccessed`, not `mailitemsaccessed`).
->
-> ℹ️ **`ConnectedAIAppInteraction`** is required for the Copilot License Optimizer page (agents / Connected AI apps telemetry). Without it, agent attribution columns (`IsAgentInteraction`, `AgentId`, `AgentName`, `ContextType`) will be empty.
->
-> ℹ️ **Meeting export window:** pull meeting-related operations with a **+1-day** trailing window — Purview batches meeting events up to 24 hours after the meeting ends.
+> ⚠️ If the search hits the row cap (50K / 100K), abandon this path and **use Path C (4-pull)** — the cap silently truncates your export and the dashboard will under-report activity.
 
-> ⚠️ **Row limits apply:** Audit Standard caps at 50,000 rows; Audit Premium at 100,000 rows per export. For large tenants or long date ranges, you may need multiple exports across smaller date windows. Consider using the [PAX script](#recommended-pax-script-one-command-does-everything) instead.
+After exporting, also complete **[Path D — Entra user export](#path-d--entra-user-export)**, then go to **[Step 2](#step-2-process-the-purview-exports)**.
 
-After exporting, proceed to **[Step 2](#step-2-process-the-purview-export)** to convert the raw CSV into the format Power BI needs.
+---
 
-</details>
+#### Path C — Manual 4-pull Purview export (recommended for medium / large tenants)
+
+The 22 operations split across four narrower Purview searches by workload. Each pull stays well under the 50K / 100K row cap individually, and the processor in Step 2 combines them into one Rollup.
+
+**Run four Purview searches**, each over the **same** date range. For each pull, follow the seven steps from Path B above but paste only the activities listed below for that pull. Save each export with a distinct filename.
+
+| # | Pull | Activities (paste into Purview **Activities** filter) | Save as |
+|---|---|---|---|
+| 1 | **Files / SharePoint / OneDrive** | `FileAccessed, FileViewed, FilePreviewed, FileModified, FileDownloaded, FileUploaded` | `pull1_files.csv` |
+| 2 | **Outlook / Mail** | `MailItemsAccessed, MailboxLogin, Send` | `pull2_outlook.csv` |
+| 3 | **Teams (chat + meetings + sessions)** | `MessageSent, MessageRead, MessagesListed, ChatRetrieved, ChatCreated, MeetingParticipantJoined, MeetingStarted, MeetingEnded, MeetingParticipantDetail, MeetingDetail, TeamsSessionStarted` | `pull3_teams.csv` |
+| 4 | **Copilot + Connected AI** | `CopilotInteraction, ConnectedAIAppInteraction` | `pull4_copilot.csv` |
+
+> ⚠️ **All four pulls must cover the same date range** — otherwise per-user-per-week math in the dashboard will be off.
+>
+> ℹ️ **Meeting export window:** extend the date range on pull #3 by **+1 day** beyond your analysis period — Purview batches meeting events up to 24 hours after the meeting ends.
+>
+> ℹ️ **Casing matters.** DAX `IN { ... }` filters are case-sensitive. Use the exact CamelCase shown above.
+
+If any individual pull still returns the row cap, split that pull into weekly chunks and concatenate the resulting CSVs into a single file (per workload) before Step 2.
+
+After exporting all four pulls, also complete **[Path D — Entra user export](#path-d--entra-user-export)**, then go to **[Step 2](#step-2-process-the-purview-exports)**.
+
+---
+
+<a id="path-d--entra-user-export"></a>
+#### Path D — Entra user export
+
+Required for **both Path B and Path C** (PAX users already have this from Path A).
 
 <details>
-<summary><strong>Step 1b. Manual Entra user export</strong></summary>
+<summary><strong>Option 1 — Entra Admin Center (simplest)</strong></summary>
 
 <br>
-
-**Option A — Entra Admin Center (simplest):**
 
 1. Go to [entra.microsoft.com](https://entra.microsoft.com/) → **Users** → **All users**
 2. Click **Download users** → select **All users**
 3. Ensure the export includes: `userPrincipalName`, `displayName`, `department`, `jobTitle`, `assignedLicenses`
 4. Download as CSV
 
-> ℹ️ The manual Entra export does not include a `hasLicense` column. The dashboard will load, but Copilot license-based insights won't be available until you add one. See [Option C](#entra-powershell-export) below, or use the [PAX script](#recommended-pax-script-one-command-does-everything) which adds it automatically.
+> ℹ️ The manual Entra export does not include a `hasLicense` column. The dashboard will load, but Copilot license-based insights won't be available until you add one. See **Option 2** below, or use the PAX script which adds it automatically.
+
+</details>
+
+<details>
+<summary><strong>Option 2 — PowerShell with license detection (recommended, multi-SKU)</strong></summary>
+
+<br>
 
 <a id="entra-powershell-export"></a>
-**Option B — PowerShell with license detection:**
+
+This snippet auto-discovers **every Copilot SKU currently provisioned in your tenant** (commercial, trial, GCC, Education, Frontline, Copilot Studio, etc.) and marks `hasLicense = TRUE` for any user holding **any** of them. Matching by **SKU GUID** is more resilient than substring-matching a part-number string, which Microsoft has renamed in the past.
 
 ```powershell
-Connect-MgGraph -Scopes "User.Read.All"
+Connect-MgGraph -Scopes "User.Read.All","Organization.Read.All"
 
-# Find your Copilot SKU ID
-Get-MgSubscribedSku | Where-Object { $_.SkuPartNumber -like '*Copilot*' } | Select-Object SkuPartNumber, SkuId
+# 1. Auto-discover every Copilot-related SKU in your tenant.
+#    The -match 'Copilot' pattern catches: Microsoft_365_Copilot, Microsoft_365_Copilot_Trial,
+#    Microsoft_365_Copilot_for_GCC, Microsoft_365_Copilot_for_Education_Faculty,
+#    Microsoft_Copilot_Studio, CCIBOTS_PRIVPREV_VIRAL, Copilot_for_Sales, etc.
+$copilotSkus = Get-MgSubscribedSku |
+  Where-Object { $_.SkuPartNumber -match 'Copilot' -or $_.SkuPartNumber -match 'CCIBOTS' } |
+  Select-Object SkuId, SkuPartNumber, ConsumedUnits
 
-# Export users with hasLicense column (replace <copilot-sku-id> with value from above)
-$copilotSku = "<copilot-sku-id>"
+# 2. Print the matched SKUs so you can audit before exporting.
+"Copilot-related SKUs found in tenant:" | Write-Host -ForegroundColor Cyan
+$copilotSkus | Format-Table -AutoSize
+
+# 3. (Optional) Scope down — uncomment to exclude industry Copilots from `hasLicense`.
+#    Leave commented to count every Copilot product as licensed.
+# $copilotSkus = $copilotSkus | Where-Object { $_.SkuPartNumber -notmatch 'Sales|Finance|Service' }
+
+$copilotSkuIds = $copilotSkus.SkuId
+
+# 4. Export every user with a hasLicense flag = TRUE if they hold any matched SKU.
 Get-MgUser -All -Property userPrincipalName,displayName,department,jobTitle,assignedLicenses |
   Select-Object userPrincipalName, displayName, department, jobTitle,
-    @{N='hasLicense'; E={ ($_.AssignedLicenses.SkuId -contains $copilotSku) }} |
+    @{N='assignedLicenses'; E={ ($_.AssignedLicenses.SkuId) -join ',' }},
+    @{N='hasLicense';      E={
+        $userSkus = $_.AssignedLicenses.SkuId
+        if ($null -eq $userSkus) { $false }
+        else { ($userSkus | Where-Object { $copilotSkuIds -contains $_ }).Count -gt 0 }
+    }} |
   Export-Csv -Path ".\EntraUsers.csv" -NoTypeInformation
-```
 
-Note the file path — you'll use it as the `EntraUsers` parameter in Step 4.
+"Export complete. Licensed user count:" | Write-Host -ForegroundColor Cyan
+(Import-Csv .\EntraUsers.csv | Where-Object { $_.hasLicense -eq 'True' }).Count
+```
 
 > ℹ️ Re-export whenever there are significant directory changes (new hires, departures, license changes). Monthly is recommended.
 
 </details>
 
+Note the Entra CSV path — you'll use it as the `EntraUsers` parameter in **[Step 3](#step-3-open-in-power-bi-desktop)**.
+
 ---
 
-### Step 2. Process the Purview export
+#### Validating your Copilot license count
 
-> **Skip this step if you used PAX with `-Rollup`.** The rollup CSVs are already import-ready. Go to [Step 4](#step-4-open-in-power-bi-desktop).
+After loading the dashboard, sanity-check the **Has Copilot License = True** count on the **Copilot License Recommendations** page (or any page filtered by license) against the live tenant count.
 
-The raw Purview CSV contains a nested `AuditData` JSON column that Power BI cannot import directly. Run the included processor to flatten it into three rollup CSVs.
+**Quick cross-check** (no PowerShell required):
 
-**Python (recommended):**
+1. Go to [Microsoft 365 admin center → Active users](https://admin.cloud.microsoft/)
+2. Click the **Licenses** filter chip → select **Microsoft 365 Copilot**
+3. The user count shown should match (±a small delta for users added/removed between export time and now)
+
+> ⚠️ Do **not** use this admin-center export as the dashboard's data source — it uses friendly product names instead of SKU part numbers and omits `department` / `jobTitle`. Use it only for visual verification.
+
+**If counts don't match (the dashboard is too low):**
+
+Your tenant may have a Copilot SKU that the matcher missed (rare — `-match 'Copilot'` catches almost everything). To diagnose and fix:
+
+1. Run the discovery step from Option 2 above standalone to list every SKU currently assigned in your tenant:
+   ```powershell
+   Get-MgSubscribedSku | Where-Object { $_.ConsumedUnits -gt 0 } |
+     Select-Object SkuPartNumber, SkuId, ConsumedUnits | Sort-Object SkuPartNumber
+   ```
+2. Identify any Copilot-related SKU not caught by `-match 'Copilot'` (for example, a custom-renamed SKU or a partner-specific bundle that includes Copilot).
+3. Extend the filter in Option 2 to include it explicitly, e.g.:
+   ```powershell
+   $copilotSkus = Get-MgSubscribedSku | Where-Object {
+       $_.SkuPartNumber -match 'Copilot' -or
+       $_.SkuPartNumber -match 'CCIBOTS' -or
+       $_.SkuPartNumber -eq 'YOUR_CUSTOM_SKU_PART_NUMBER'
+   }
+   ```
+4. Re-run the export and refresh the PBIT.
+
+> 📖 **SKU reference:** Microsoft's full list of license SKU part numbers and GUIDs is published at [Product names and service plan identifiers for licensing](https://learn.microsoft.com/en-us/entra/identity/users/licensing-service-plan-reference). Use it to confirm SKU names if any look unfamiliar.
+
+> ℹ️ **No PBIT change is needed** to add a new SKU — the matching logic lives in the PowerShell export, not in the report. Re-run the export with the updated SKU list and refresh; the dashboard picks up the change automatically.
+
+---
+
+### Step 2. Process the Purview exports
+
+> **Skip this step if you used Path A (PAX with `-Rollup`).** The rollup CSVs are already import-ready. Go to [Step 3](#step-3-open-in-power-bi-desktop).
+
+The raw Purview CSV(s) contain a nested `AuditData` JSON column that Power BI cannot import directly. The included processor (`Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py`) flattens it into three import-ready CSVs.
 
 > 💡 **Don't have Python installed?** [Download the latest version at python.org](https://python.org).
 
-The processor (`Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py`) supports both PAX-style single-file exports and the manual 4-pull workflow in a single script.
-
-**(A) Single PAX / PowerShell export:**
+**If you used Path B (single export):**
 ```cmd
 python scripts\Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py --pax "Purview_Export.csv"
 ```
 
-<details>
-<summary><strong>(B) Manual 4-pull export (combining several Purview CSVs into one Rollup)</strong></summary>
-
-<br>
-
-Manual Purview exports cap at 50K (Standard) or 100K (Premium) rows per search job. The recommended workaround for medium tenants is the **4-pull strategy** — run four narrower Purview searches scoped by workload, then process them together in a single command.
-
-**Recommended 4-pull split** (each scoped to the same 1-month window):
-
-| Pull | Activities (paste into Purview Activities filter) |
-|---|---|
-| **1. Files / SharePoint / OneDrive** | `FileAccessed, FileViewed, FilePreviewed, FileModified, FileDownloaded, FileUploaded` |
-| **2. Outlook / Mail** | `MailItemsAccessed, MailboxLogin, Send` |
-| **3. Teams / Chat** | `MessageSent, MessageRead, MessagesListed, ChatRetrieved, ChatCreated, MeetingParticipantJoined, MeetingStarted, MeetingEnded, MeetingParticipantDetail, MeetingDetail, TeamsSessionStarted` |
-| **4. Copilot + Connected AI** | `CopilotInteraction, ConnectedAIAppInteraction` |
-
-Then process all four pulls together into one import-ready Rollup CSV:
-
+**If you used Path C (4-pull):**
 ```cmd
 python scripts\Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py ^
     --files   "pull1_files.csv" ^
-    --outlook "pull2_mail.csv" ^
+    --outlook "pull2_outlook.csv" ^
     --teams   "pull3_teams.csv" ^
     --copilot "pull4_copilot.csv"
 ```
 
-**Pre-flight validator** (sanity-checks a raw Purview CSV before processing — row counts, operation distribution, AuditData JSON sample):
+Either invocation produces three output files (sharing a `_<YYYYMMDD_HHMMSS>` timestamp):
 
-```cmd
-python scripts\validate_purview_export.py pull.csv
-```
+| File | Contents |
+|---|---|
+| **Rollup** (9 columns) | Aggregated event counts with min/max timestamps |
+| **UserStats** (27 columns) | One row per user with pre-computed metrics, tier classifications, and engagement segments |
+| **SessionCohort** (3 columns) | One row per (UserId, App) pair with a session-count bucket |
 
-</details>
+Note the output file paths — you'll need them in **Step 3**.
 
 <details>
 <summary><strong>Running from a Python interactive terminal instead</strong></summary>
 
 <br>
-
-If you are already at a Python interactive prompt (`>>>`), use `subprocess` to run the script with the required arguments:
 
 ```python
 import subprocess
@@ -274,16 +334,6 @@ subprocess.run([
 
 </details>
 
-Both modes produce three output files (with a shared `_<YYYYMMDD_HHMMSS>` timestamp):
-
-| File | Contents |
-|---|---|
-| **Rollup** (9 columns) | Aggregated event counts with min/max timestamps |
-| **UserStats** (27 columns) | One row per user with pre-computed metrics, tier classifications, and engagement segments |
-| **SessionCohort** (3 columns) | One row per (UserId, App) pair with a session-count bucket |
-
-Note the output file paths — you'll need them in Step 4.
-
 <details>
 <summary><strong>Optional parameters and processing details</strong></summary>
 
@@ -291,8 +341,8 @@ Note the output file paths — you'll need them in Step 4.
 
 | Parameter | Description |
 |---|---|
-| `--pax` | Single PAX / PowerShell export mode — one CSV in |
-| `--teams` / `--outlook` / `--files` / `--copilot` | Manual 4-pull mode — pass one CSV per workload to combine into a single Rollup |
+| `--pax` | Single-export mode (Path B or raw PAX output) — one CSV in |
+| `--teams` / `--outlook` / `--files` / `--copilot` | 4-pull mode (Path C) — one CSV per workload, combined into a single Rollup |
 | `--output-dir` / `-o` | Directory for output files (default: input file's directory) |
 | `--prompt-filter` | Filter Copilot messages: `Prompt`, `Response`, `Both`, or `Null` |
 | `--skip-precompute` | Skip generating UserStats and SessionCohort files |
@@ -301,7 +351,7 @@ Note the output file paths — you'll need them in Step 4.
 | `--quiet` / `-q` | Suppress progress output |
 
 **What the script does:**
-- Reads each row of the raw Purview CSV and parses the `AuditData` JSON column
+- Reads each row of the raw Purview CSV(s) and parses the `AuditData` JSON column
 - Flattens nested objects and arrays (including Copilot event data with messages, contexts, and accessed resources)
 - Aggregates the flattened events into rolled-up rows keyed by (UserId, CreationDate, Operation, Workload, SourceFileExtension, AppHost)
 - Produces three output CSV files
@@ -312,15 +362,8 @@ Note the output file paths — you'll need them in Step 4.
 
 ---
 
-### Step 3. Export Entra user details
-
-> **Skip this step if you used PAX with `-IncludeUserInfo`.** The Entra CSV was already produced. Go to [Step 4](#step-4-open-in-power-bi-desktop).
-
-If you exported Purview data manually in Step 1 and haven't yet exported Entra user data, do so now using one of the options in [Step 1b](#step-1b-manual-entra-user-export) above.
-
----
-
-### Step 4. Open in Power BI Desktop
+<a id="step-3-open-in-power-bi-desktop"></a>
+### Step 3. Open in Power BI Desktop
 
 1. Open **Power BI Desktop** → **File** → **Open report** → **Browse** → select the `.pbit` template from this folder
 2. Go to **Home** → **Transform data** → **Edit parameters**
