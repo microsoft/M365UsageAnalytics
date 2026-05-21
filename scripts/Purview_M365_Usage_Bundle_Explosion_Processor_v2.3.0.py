@@ -1,13 +1,33 @@
 #!/usr/bin/env python3
 """
-Purview M365 Usage Bundle Explosion Processor v2.1.0
+Purview M365 Usage Bundle Explosion Processor v2.3.0
 =====================================================
 Two-mode processor for Purview audit log CSV exports:
 
   ROLLUP MODE (default):  Aggregates exploded events into rolled-up rows keyed by
-      (UserId, CreationDate, Operation, Workload, SourceFileExtension, AppHost)
-      with EventCount, MIN(CreationTime), MAX(CreationTime).  Targets 80%+ row
-      reduction for Power BI ingestion.  Streaming — no exploded rows held in memory.
+      (UserId, CreationDate, Operation, Workload, SourceFileExtension, AppHost,
+       AgentId, AgentName, ContextType)
+      with EventCount, MIN(CreationTime), MAX(CreationTime), IsAgentInteraction.
+      Targets 80%+ row reduction for Power BI ingestion.
+      Streaming — no exploded rows held in memory.
+
+  v2.3.0 CHANGES (validated against MS Learn audit-log schema + DAX TMDL fingerprint):
+      • Canonical Operation names enforced. Three legacy/wrong names auto-renamed at
+        intake (OP_RENAME), preserving historical data while emitting canonical values:
+            FileViewed                 → FileAccessed
+            MeetingParticipantJoined   → MeetingParticipantDetail
+            ConnectedAIAppInteraction  → AIAppInteraction
+      • TEAMS_OPS / FILE_OPS / COPILOT_OPS updated to the 14 DAX-required ops only.
+      • Rollup CSV header extended with 4 agent telemetry columns (AgentId, AgentName,
+        ContextType, IsAgentInteraction) so M365Usage.tmdl fingerprint check passes
+        without Power Query post-processing.
+      • Multi-file input supported: pass --input/-i multiple paths (or repeat the flag)
+        to combine N Purview exports into one rollup + UserStats + SessionCohort bundle.
+        Validated 4-pull strategy: Teams + Outlook + Files + Copilot in a single run.
+      • is_copilot() now also recognises AIAppInteraction (agent/connected-app events).
+      • All performance characteristics preserved: streaming intake, orjson, no buffered
+        explosion, per-record cap. Goal is to move processing OUT of Power BI INTO Python
+        so the .pbix loads/refreshes faster without losing fidelity.
 
       After the rollup CSV is written, a second pass streams through it to produce
       two additional analytics files (unless --no-userstats is specified):
@@ -29,15 +49,27 @@ Requirements:
     pip install orjson   (OPTIONAL - 5-10x faster JSON parsing; falls back to stdlib json)
 
 Usage:
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.1.0.py --input <CSV>
-        [--output-dir <DIR>] [--mode rollup|event-level]
-        [--prompt-filter Prompt|Response|Both|Null]
-        [--reconcile] [--no-userstats] [--quiet] [--version]
+    # (A) Single PAX / PowerShell export:
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py --pax <CSV>
+
+    # (B) Manual 4-pull export from Purview Audit:
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py \
+        --teams <CSV> --outlook <CSV> --files <CSV> --copilot <CSV>
+
+    Common optional flags:
+        --output-dir <DIR>          Where to write outputs (default: input folder)
+        --skip-precompute           Skip UserStats + SessionCohort
+        --reconcile                 Sample-based correctness check
+        --prompt-filter <MODE>      Prompt|Response|Both|Null
+        --debug-events              v1-compatible 153-column event-level CSV
+        --quiet                     Suppress progress output
 
 Output files (rollup mode — all share the same timestamp):
-    <input_stem>_Rollup_<YYYYMMDD_HHMMSS>.csv          9 columns — aggregated events
-    <input_stem>_UserStats_<YYYYMMDD_HHMMSS>.csv       27 columns — per-user metrics
-    <input_stem>_SessionCohort_<YYYYMMDD_HHMMSS>.csv    3 columns — (UserId, App, Bucket)
+    <stem>_Rollup_<YYYYMMDD_HHMMSS>.csv         13 columns — aggregated events + agent fields
+    <stem>_UserStats_<YYYYMMDD_HHMMSS>.csv      27 columns — per-user metrics
+    <stem>_SessionCohort_<YYYYMMDD_HHMMSS>.csv   3 columns — (UserId, App, Bucket)
+    (<stem> = input file's stem for single input, or '<firstStem>_Combined' for multi-input.
+     Rename the output file or use --output-dir if you want a tenant-specific name.)
 
 Output file (event-level mode):
     <input_stem>_Exploded_<YYYYMMDD_HHMMSS>.csv       153 columns — one row per event
@@ -53,23 +85,35 @@ Arguments:
     --version             Show version and exit.
 
 Examples:
-    # Default rollup (9-column output + UserStats + SessionCohort)
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.1.0.py -i Purview_Export.csv
+    # Default rollup (13-column output + UserStats + SessionCohort)
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py -i Purview_Export.csv
+
+    # Combine the validated 4-pull bundle (Teams + Outlook + Files + Copilot) in one run
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py \
+        -i Teams_Export.csv Outlook_Export.csv Files_Export.csv Copilot_Export.csv \
+        --combined-stem ZavaCorp_2025_11
 
     # Rollup with output in a different directory
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.1.0.py -i Purview_Export.csv --output-dir ./output
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py -i Purview_Export.csv --output-dir ./output
 
     # Rollup only — skip UserStats and SessionCohort generation
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.1.0.py -i Purview_Export.csv --no-userstats
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py -i Purview_Export.csv --no-userstats
 
     # v1-compatible event-level explosion (153-column output)
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.1.0.py -i Purview_Export.csv --mode event-level
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py -i Purview_Export.csv --mode event-level
 
     # Rollup with sample-based reconciliation check
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.1.0.py -i Purview_Export.csv --reconcile
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py -i Purview_Export.csv --reconcile
+
+Validated 4-pull strategy (Purview Audit → Activities filter, type+click each chip):
+    Teams   (7d):  MessageSent, MessageRead, ChatCreated, TeamsSessionStarted,
+                   MeetingParticipantDetail
+    Outlook (30d): MailItemsAccessed, Send, MailboxLogin
+    Files   (60d): FileAccessed, FileModified, FileDownloaded, FileUploaded
+    Copilot (30d): CopilotInteraction, AIAppInteraction        (filter by record type)
 
 Author:  Microsoft Copilot Growth ROI Advisory Team (copilot-roi-advisory-team-gh@microsoft.com)
-Version: 2.1.0
+Version: 2.3.0
 """
 
 from __future__ import annotations
@@ -78,6 +122,7 @@ import argparse
 import csv
 import os
 import random
+import re
 import sys
 import time
 from collections import defaultdict
@@ -116,7 +161,7 @@ except ImportError:
 # CONSTANTS
 # ═════════════════════════════════════════════════════════════════════════════
 
-SCRIPT_VERSION = "2.1.0"
+SCRIPT_VERSION = "2.3.0"
 
 EXPLOSION_PER_RECORD_ROW_CAP = 1000
 STREAMING_CHUNK_SIZE = 5000
@@ -171,15 +216,26 @@ M365_UNIFIED_HEADER: list[str] = [
     "AccessedResource_ResourceType", "SensitivityLabel", "Context_Item",
 ]
 
-# Rollup output header (9 columns)
+# Rollup output header (13 columns) — matches M365Usage.tmdl fingerprint:
+# required keys + EventCount + temporal MIN/MAX + agent telemetry.
 ROLLUP_HEADER: list[str] = [
     "UserId", "CreationDate", "Operation", "Workload",
     "SourceFileExtension", "AppHost",
-    "EventCount", "CreationTime", "MaxCreationTime",
+    "EventCount", "ItemsAccessedCount", "CreationTime", "MaxCreationTime",
+    "AgentId", "AgentName", "ContextType", "IsAgentInteraction",
 ]
 
 # Reconciliation sample size
 RECONCILE_SAMPLE_SIZE = 10_000
+
+# ── Operation canonicalization (v2.3.0) ──────────────────────────────────────
+# Legacy/wrong names that have appeared in older exports or older DAX models.
+# Renamed at intake so historical data merges cleanly with current canonical pulls.
+OP_RENAME: dict[str, str] = {
+    "FileViewed":                "FileAccessed",
+    "MeetingParticipantJoined":  "MeetingParticipantDetail",
+    "ConnectedAIAppInteraction": "AIAppInteraction",
+}
 
 # ── UserStats classification sets (match Power Query logic exactly) ──────────
 WORD_EXTS: set[str] = {"docx", "doc", "dotx"}
@@ -187,10 +243,24 @@ EXCEL_EXTS: set[str] = {"xlsx", "xls", "xlsm", "csv"}
 PPT_EXTS: set[str] = {"pptx", "ppt", "ppsx"}
 OFFICE_EXTS: set[str] = WORD_EXTS | EXCEL_EXTS | PPT_EXTS
 
-FILE_OPS: set[str] = {"FileViewed", "FileModified", "FileDownloaded", "FileUploaded"}
-OUTLOOK_OPS: set[str] = {"Send", "MailItemsAccessed", "MailboxLogin"}           # active-DAY counting
-OUTLOOK_ACT_OPS: set[str] = {"Send", "MailItemsAccessed", "MailboxLogin"}      # event COUNT
-TEAMS_OPS: set[str] = {"MessageSent", "MessageRead", "MeetingParticipantJoined"}
+# Canonical 14 ops required by the CLO TMDL DAX measures, validated against MS Learn.
+FILE_OPS: set[str] = {
+    "FileAccessed",                            # canonical (was FileViewed in legacy)
+    "FileModified",
+    "FileDownloaded",
+    "FileUploaded",
+}
+OUTLOOK_OPS: set[str] = {"Send", "MailItemsAccessed", "MailboxLogin"}  # active-DAY + COUNT
+TEAMS_OPS: set[str] = {
+    "MessageSent",                             # Msgs Sent
+    "MessageRead", "ChatCreated",              # Msgs Read (Graph-API tenants emit ChatCreated)
+    "MeetingParticipantDetail",                # canonical (was MeetingParticipantJoined)
+    "TeamsSessionStarted",                     # Meetings/calls fallback
+}
+COPILOT_OPS: set[str] = {"CopilotInteraction", "AIAppInteraction"}  # AIAppInteraction = agents/connected apps
+
+# AppHost values that indicate an agent / connected-app interaction.
+AGENT_APPHOSTS: set[str] = {"agent", "copilotstudio", "declarativeagent", "customengineagent"}
 
 USERSTATS_HEADER: list[str] = [
     "UserId",
@@ -220,19 +290,37 @@ _CREATION_DATE_FORMATS: tuple[str, ...] = (
     "%m/%d/%Y",
 )
 
-# GroupKey type: (user_id_lower, creation_date_normalized, operation, workload, sfe_lower, app_host)
-GroupKey = tuple[str, str, str, str, str, str]
+# GroupKey type (v2.3.0): adds agent_id, agent_name, context_type so multi-agent users
+# don't collapse rows together. IsAgentInteraction is derived on write from AgentId.
+# (user_id_lower, creation_date_normalized, operation, workload, sfe_lower, app_host,
+#  agent_id, agent_name, context_type)
+GroupKey = tuple[str, str, str, str, str, str, str, str, str]
 
 
 class RollupAccum:
     """Lightweight accumulator for one rollup group — avoids dataclass import overhead."""
-    __slots__ = ("event_count", "min_creation_time", "max_creation_time", "original_user_id")
+    __slots__ = (
+        "event_count", "items_accessed_count",
+        "min_creation_time", "max_creation_time",
+        "original_user_id",
+        "is_agent_interaction",
+    )
 
-    def __init__(self, event_count: int, min_ct: str, max_ct: str, original_uid: str) -> None:
+    def __init__(
+        self,
+        event_count: int,
+        items_accessed: int,
+        min_ct: str,
+        max_ct: str,
+        original_uid: str,
+        is_agent: bool = False,
+    ) -> None:
         self.event_count = event_count
+        self.items_accessed_count = items_accessed
         self.min_creation_time = min_ct
         self.max_creation_time = max_ct
         self.original_user_id = original_uid  # first-seen casing for output
+        self.is_agent_interaction = is_agent
 
 
 def normalize_creation_date(raw: str) -> str:
@@ -396,9 +484,8 @@ def categorize_agent(agent_id: Any) -> str:
 # ═════════════════════════════════════════════════════════════════════════════
 
 def is_copilot(op: str, wl: str) -> bool:
-    """True if the row represents a Copilot event."""
-    return wl == "Copilot" or op == "CopilotInteraction"
-
+    """True if the row represents a Copilot or agent / connected-app event."""
+    return wl == "Copilot" or op in COPILOT_OPS
 
 def is_excel_file_op(ext: str, op: str) -> bool:
     """True if the row is a file operation on an Excel-family extension."""
@@ -414,7 +501,7 @@ def app_column(ext: str, op: str, wl: str) -> str:
         return "Excel"
     if e in PPT_EXTS and op in FILE_OPS:
         return "PowerPoint"
-    if wl == "Exchange" and op in OUTLOOK_ACT_OPS:
+    if wl == "Exchange" and op in OUTLOOK_OPS:
         return "Outlook"
     if wl == "MicrosoftTeams" and op in TEAMS_OPS:
         return "Teams"
@@ -548,31 +635,83 @@ def _compute_copilot_event_count(
     return min(max(row_count, 1), EXPLOSION_PER_RECORD_ROW_CAP)
 
 
+def _count_mail_items_accessed(audit_data: dict) -> int:
+    """Items represented by one MailItemsAccessed event.
+    Sums len(Folders[].FolderItems[]) when present; falls back to 1 (Bind-style)."""
+    folders = audit_data.get("Folders")
+    if isinstance(folders, list):
+        total = 0
+        for fld in folders:
+            if not isinstance(fld, dict):
+                continue
+            fi = fld.get("FolderItems")
+            if isinstance(fi, list):
+                total += len(fi)
+        if total > 0:
+            return total
+    return 1
+
+
+# Non-human/system identities found in Purview audit logs (Teams Sync, SharePoint app,
+# SupervisoryReview bots, ServicePrincipals, NT-style accounts, SIDs, bare GUIDs, etc.).
+# These have no matching userPrincipalName in EntraUsers and would render as blank
+# User/Department rows in license-recommendation visuals. Filter out at the rollup stage.
+_UPN_LOCAL_RE = re.compile(r"^[^\s\\@]+$")
+_BARE_GUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
+
+
+def _is_human_upn(uid: str) -> bool:
+    """True iff uid is a syntactically valid human UPN (local@domain.tld), excluding
+    well-known service/bot patterns (SupervisoryReview{...}@..., bare GUIDs)."""
+    if not uid:
+        return False
+    s = uid.strip()
+    if _BARE_GUID_RE.match(s):
+        return False
+    if s.lower().startswith("supervisoryreview{"):
+        return False
+    if "@" not in s or s.count("@") != 1:
+        return False
+    local, domain = s.split("@", 1)
+    if not _UPN_LOCAL_RE.match(local):
+        return False
+    if "." not in domain or not domain or domain.startswith(".") or domain.endswith("."):
+        return False
+    return True
+
+
 def _extract_rollup_keys(
     record: dict,
     audit_data: dict,
     ced: dict | None,
     prompt_filter: str | None = None,
-) -> tuple[GroupKey, int, str, str] | None:
+) -> tuple[GroupKey, int, int, str, str, bool] | None:
     """
-    Extract rollup group key + event count + creation_time + original UserId.
+    Extract rollup group key + event count + items-accessed count + creation_time +
+    original UserId + is_agent_interaction flag.
 
     Returns None if the record is filtered out (e.g. prompt_filter eliminates all messages).
     Returns:
-        (group_key, event_count, creation_time_iso, original_user_id)
-    where group_key uses lowercased UserId for case-insensitive grouping.
+        (group_key, event_count, items_accessed_count, creation_time_iso,
+         original_user_id, is_agent_interaction)
+    where group_key uses lowercased UserId for case-insensitive grouping and
+    includes (agent_id, agent_name, context_type) so multi-agent users don't collapse.
     """
     # UserId: original casing preserved for output; lowered for grouping key
     raw_uid = _norm_key_str(safe_get(audit_data, "UserId") or record.get("UserId", ""))
+    # Filter non-human/system identities (Teams Sync, ServicePrincipals, SIDs, bots, etc.)
+    if not _is_human_upn(raw_uid):
+        return None
     uid_lower = raw_uid.lower()
 
     # CreationDate: from CSV, normalized to midnight
     creation_date = normalize_creation_date(record.get("CreationDate", ""))
 
-    # Operation: from audit_data → CSV fallback, preserve case
+    # Operation: from audit_data → CSV fallback, preserve case, then canonicalize via OP_RENAME
     operation = _norm_key_str(
         safe_get(audit_data, "Operation") or record.get("Operation", "") or record.get("Operations", "")
     )
+    operation = OP_RENAME.get(operation, operation)
 
     # Workload: from audit_data, preserve case
     workload = _norm_key_str(safe_get(audit_data, "Workload"))
@@ -586,7 +725,26 @@ def _extract_rollup_keys(
             safe_get(ced, "AppHost") or safe_get(audit_data, "AppHost")
         )
     else:
-        app_host = ""
+        app_host = _norm_key_str(safe_get(audit_data, "AppHost"))
+
+    # Agent telemetry: from CopilotEventData when present, fall back to top-level AuditData fields
+    agent_id = _norm_key_str(
+        (safe_get(ced, "AgentId") if ced else None)
+        or safe_get(audit_data, "AgentId")
+    )
+    agent_name = _norm_key_str(
+        (safe_get(ced, "AgentName") if ced else None)
+        or safe_get(audit_data, "AgentName")
+    )
+    context_type = ""
+    if ced:
+        contexts = get_array_fast(ced, "Contexts")
+        if contexts:
+            # First context wins for the key; multi-context records still collapse
+            # cleanly because event_count already reflects context-array length.
+            first_ctx = contexts[0]
+            if isinstance(first_ctx, dict):
+                context_type = _norm_key_str(safe_get(first_ctx, "Type"))
 
     # CreationTime: from audit_data, ISO formatted for lexicographic MIN/MAX
     creation_time = format_date_purview(safe_get(audit_data, "CreationTime"))
@@ -599,8 +757,31 @@ def _extract_rollup_keys(
     else:
         event_count = 1  # Non-Copilot: always 1:1
 
-    group_key: GroupKey = (uid_lower, creation_date, operation, workload, sfe, app_host)
-    return group_key, event_count, creation_time, raw_uid
+    # Items accessed count: only meaningful for MailItemsAccessed (Exchange).
+    items_accessed_count = 0
+    if operation == "MailItemsAccessed":
+        items_accessed_count = _count_mail_items_accessed(audit_data)
+
+    # IsAgentInteraction: TRUE iff AgentId present, AppHost is an agent surface,
+    # or Operation is an agent op (AIAppInteraction).
+    is_agent_interaction = bool(
+        agent_id
+        or app_host.lower() in AGENT_APPHOSTS
+        or operation == "AIAppInteraction"
+    )
+
+    group_key: GroupKey = (
+        uid_lower, creation_date, operation, workload, sfe, app_host,
+        agent_id, agent_name, context_type,
+    )
+    return (
+        group_key,
+        event_count,
+        items_accessed_count,
+        creation_time,
+        raw_uid,
+        is_agent_interaction,
+    )
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -1310,20 +1491,31 @@ def run_explosion(
 # ═════════════════════════════════════════════════════════════════════════════
 
 def run_rollup(
-    input_csv: str,
+    input_csv: str | list[str],
     output_csv: str,
     prompt_filter: str | None = None,
     quiet: bool = False,
 ) -> dict[str, Any]:
     """
-    Streaming rollup: read CSV row-by-row → parse AuditData → extract 6 keys +
-    CreationTime → accumulate into dict[GroupKey, RollupAccum] → write 9-column CSV.
+    Streaming rollup: read one or more CSVs row-by-row → parse AuditData → extract
+    9 group keys + CreationTime + agent flag → accumulate into
+    dict[GroupKey, RollupAccum] → write 13-column CSV.
+
+    `input_csv` accepts a single path (PAX/PowerShell single-file export) or a
+    list of paths (manual 4-pull export from Purview Audit). Output schema is
+    identical either way — the same PBIT template ingests both modes.
 
     No exploded row dicts are ever stored in memory.
     """
-    if not os.path.isfile(input_csv):
-        print(f"ERROR: Input file not found: {input_csv}", file=sys.stderr)
-        sys.exit(1)
+    if isinstance(input_csv, (str, Path)):
+        input_paths: list[str] = [str(input_csv)]
+    else:
+        input_paths = [str(p) for p in input_csv]
+
+    for p in input_paths:
+        if not os.path.isfile(p):
+            print(f"ERROR: Input file not found: {p}", file=sys.stderr)
+            sys.exit(1)
 
     t_start = time.perf_counter()
     rollup: dict[GroupKey, RollupAccum] = {}
@@ -1337,65 +1529,77 @@ def run_rollup(
     if not quiet:
         print(f"Purview M365 Usage Bundle Explosion Processor v{SCRIPT_VERSION} [ROLLUP MODE]")
         print(f"  JSON engine:    {_JSON_ENGINE}")
-        print(f"  Input:          {input_csv}")
+        if len(input_paths) == 1:
+            print(f"  Input:          {input_paths[0]}")
+        else:
+            print(f"  Inputs ({len(input_paths)}):")
+            for p in input_paths:
+                print(f"                  {p}")
         print(f"  Output:         {output_csv}")
         print(f"  Prompt filter:  {prompt_filter or 'None'}")
         print()
         print("Processing records (streaming rollup)...")
 
-    # ── Streaming read + accumulate ──────────────────────────────────────
-    with open(input_csv, "r", encoding="utf-8-sig", newline="") as f:
-        reader = csv.DictReader(f)
-        for record in reader:
-            stats["input_records"] += 1
+    # ── Streaming read + accumulate (across one OR many input files) ─────
+    for input_csv_path in input_paths:
+        with open(input_csv_path, "r", encoding="utf-8-sig", newline="") as f:
+            reader = csv.DictReader(f)
+            for record in reader:
+                stats["input_records"] += 1
 
-            # Progress indicator
-            if not quiet and stats["input_records"] % 500_000 == 0:
-                print(f"  {stats['input_records']:>12,} records processed, "
-                      f"{len(rollup):,} groups...")
+                # Progress indicator
+                if not quiet and stats["input_records"] % 500_000 == 0:
+                    print(f"  {stats['input_records']:>12,} records processed, "
+                          f"{len(rollup):,} groups...")
 
-            # Parse AuditData JSON
-            audit_data_raw = record.get("AuditData", "")
-            if not audit_data_raw or not isinstance(audit_data_raw, str) or not audit_data_raw.strip():
-                stats["parse_errors"] += 1
-                continue
-            try:
-                audit_data = json_loads(audit_data_raw)
-            except Exception:
-                stats["parse_errors"] += 1
-                continue
-            if not isinstance(audit_data, dict):
-                stats["parse_errors"] += 1
-                continue
+                # Parse AuditData JSON
+                audit_data_raw = record.get("AuditData", "")
+                if not audit_data_raw or not isinstance(audit_data_raw, str) or not audit_data_raw.strip():
+                    stats["parse_errors"] += 1
+                    continue
+                try:
+                    audit_data = json_loads(audit_data_raw)
+                except Exception:
+                    stats["parse_errors"] += 1
+                    continue
+                if not isinstance(audit_data, dict):
+                    stats["parse_errors"] += 1
+                    continue
 
-            ced = safe_get(audit_data, "CopilotEventData")
-            if ced and not isinstance(ced, dict):
-                ced = None
+                ced = safe_get(audit_data, "CopilotEventData")
+                if ced and not isinstance(ced, dict):
+                    ced = None
 
-            # Extract rollup keys (lightweight — no row dict built)
-            result = _extract_rollup_keys(record, audit_data, ced, prompt_filter)
-            if result is None:
-                continue  # filtered out by prompt_filter
+                # Extract rollup keys (lightweight — no row dict built)
+                result = _extract_rollup_keys(record, audit_data, ced, prompt_filter)
+                if result is None:
+                    continue  # filtered out by prompt_filter or non-human UPN
 
-            group_key, event_count, creation_time, original_uid = result
-            stats["virtual_exploded_event_count"] += event_count
+                (group_key, event_count, items_accessed_count,
+                 creation_time, original_uid, is_agent) = result
+                stats["virtual_exploded_event_count"] += event_count
 
-            # Accumulate into rollup dict
-            if group_key in rollup:
-                acc = rollup[group_key]
-                acc.event_count += event_count
-                if creation_time:
-                    if not acc.min_creation_time or creation_time < acc.min_creation_time:
-                        acc.min_creation_time = creation_time
-                    if not acc.max_creation_time or creation_time > acc.max_creation_time:
-                        acc.max_creation_time = creation_time
-            else:
-                rollup[group_key] = RollupAccum(
-                    event_count=event_count,
-                    min_ct=creation_time,
-                    max_ct=creation_time,
-                    original_uid=original_uid,
-                )
+                # Accumulate into rollup dict
+                if group_key in rollup:
+                    acc = rollup[group_key]
+                    acc.event_count += event_count
+                    acc.items_accessed_count += items_accessed_count
+                    if is_agent:
+                        acc.is_agent_interaction = True
+                    if creation_time:
+                        if not acc.min_creation_time or creation_time < acc.min_creation_time:
+                            acc.min_creation_time = creation_time
+                        if not acc.max_creation_time or creation_time > acc.max_creation_time:
+                            acc.max_creation_time = creation_time
+                else:
+                    rollup[group_key] = RollupAccum(
+                        event_count=event_count,
+                        items_accessed=items_accessed_count,
+                        min_ct=creation_time,
+                        max_ct=creation_time,
+                        original_uid=original_uid,
+                        is_agent=is_agent,
+                    )
 
     # ── Write rollup output CSV ──────────────────────────────────────────
     stats["output_rows"] = len(rollup)
@@ -1408,7 +1612,7 @@ def run_rollup(
     with open(output_csv, "w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f, lineterminator="\n")
         writer.writerow(ROLLUP_HEADER)
-        for (uid_lower, cdate, op, wl, sfe, ah), acc in rollup.items():
+        for (uid_lower, cdate, op, wl, sfe, ah, agent_id, agent_name, ctx_type), acc in rollup.items():
             writer.writerow([
                 acc.original_user_id,  # output original casing, NOT lowered key
                 cdate,
@@ -1417,8 +1621,13 @@ def run_rollup(
                 sfe,
                 ah,
                 acc.event_count,
+                acc.items_accessed_count,
                 acc.min_creation_time,   # CreationTime = MIN
                 acc.max_creation_time,   # MaxCreationTime = MAX
+                agent_id,
+                agent_name,
+                ctx_type,
+                "TRUE" if acc.is_agent_interaction else "FALSE",
             ])
 
     t_elapsed = time.perf_counter() - t_start
@@ -1493,6 +1702,8 @@ def run_reconcile(
     for record in sample:
         try:
             rows = explode_record(record, prompt_filter=prompt_filter)
+            # Apply same non-human UPN filter as rollup path so totals reconcile
+            rows = [r for r in rows if _is_human_upn(r.get("UserId", ""))]
             event_rows.extend(rows)
         except Exception:
             event_errors += 1
@@ -1521,11 +1732,15 @@ def run_reconcile(
         result = _extract_rollup_keys(record, audit_data, ced, prompt_filter)
         if result is None:
             continue
-        group_key, event_count, creation_time, original_uid = result
+        (group_key, event_count, items_accessed_count,
+         creation_time, original_uid, is_agent) = result
 
         if group_key in rollup_sample:
             acc = rollup_sample[group_key]
             acc.event_count += event_count
+            acc.items_accessed_count += items_accessed_count
+            if is_agent:
+                acc.is_agent_interaction = True
             if creation_time:
                 if not acc.min_creation_time or creation_time < acc.min_creation_time:
                     acc.min_creation_time = creation_time
@@ -1534,9 +1749,11 @@ def run_reconcile(
         else:
             rollup_sample[group_key] = RollupAccum(
                 event_count=event_count,
+                items_accessed=items_accessed_count,
                 min_ct=creation_time,
                 max_ct=creation_time,
                 original_uid=original_uid,
+                is_agent=is_agent,
             )
 
     # ── Compare totals ───────────────────────────────────────────────────
@@ -1581,10 +1798,12 @@ def run_reconcile(
     # Helper: sum EventCount from rollup for matching groups
     def _ru_count(**filters: str | set) -> int:
         total = 0
-        for (uid_l, cdate, op, wl, sfe, ah), acc in rollup_sample.items():
+        for (uid_l, cdate, op, wl, sfe, ah, agent_id, agent_name, ctx_type), acc in rollup_sample.items():
             match = True
             key_map = {"Operation": op, "Workload": wl,
-                       "SourceFileExtension": sfe, "AppHost": ah}
+                       "SourceFileExtension": sfe, "AppHost": ah,
+                       "AgentId": agent_id, "AgentName": agent_name,
+                       "ContextType": ctx_type}
             for col, val in filters.items():
                 key_val = key_map.get(col, "")
                 if isinstance(val, set):
@@ -1614,10 +1833,10 @@ def run_reconcile(
            _ru_count(Operation="CopilotInteraction", AppHost="Teams"),
            _ev_count(Operation="CopilotInteraction", AppHost="Teams"))
 
-    # Check 4: Excel FileViewed
-    _check("Excel FileViewed (Operation=FileViewed, SourceFileExtension in xlsx/xls/xlsm/csv)",
-           _ru_count(Operation="FileViewed", SourceFileExtension={"xlsx", "xls", "xlsm", "csv"}),
-           _ev_count(Operation="FileViewed", SourceFileExtension={"xlsx", "xls", "xlsm", "csv"}))
+    # Check 4: Excel FileAccessed (was FileViewed in pre-v2.3 — renamed via OP_RENAME)
+    _check("Excel FileAccessed (Operation=FileAccessed, SourceFileExtension in xlsx/xls/xlsm/csv)",
+           _ru_count(Operation="FileAccessed", SourceFileExtension={"xlsx", "xls", "xlsm", "csv"}),
+           _ev_count(Operation="FileAccessed", SourceFileExtension={"xlsx", "xls", "xlsm", "csv"}))
 
     # ── Temporal checks ──────────────────────────────────────────────────
     rollup_min_ct = min((acc.min_creation_time for acc in rollup_sample.values() if acc.min_creation_time), default="")
@@ -1743,7 +1962,7 @@ def write_userstats_files(
             # Activity event counts
             if wl == "MicrosoftTeams" and op in TEAMS_OPS:
                 t_ec[uid_lower] += event_count
-            if wl == "Exchange" and op in OUTLOOK_ACT_OPS:
+            if wl == "Exchange" and op in OUTLOOK_OPS:
                 o_ec[uid_lower] += event_count
             if ext in OFFICE_EXTS and op in FILE_OPS:
                 off_ec[uid_lower] += event_count
@@ -1896,62 +2115,146 @@ def write_userstats_files(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description=f"Purview M365 Usage Bundle Explosion Processor v{SCRIPT_VERSION} — "
-        "Rollup-aggregated or event-level export of Purview audit log CSV for Power BI.",
+        prog="purview_m365_processor",
+        description=(
+            f"Purview M365 Usage Bundle Processor v{SCRIPT_VERSION}\n"
+            "Pre-computes the M365 Usage rollup + UserStats + SessionCohort CSVs\n"
+            "consumed by the Power BI template. Accepts either layout:\n"
+            "  (A) ONE PAX / PowerShell export ............ use --pax\n"
+            "  (B) FOUR manual Purview Audit exports ...... use --teams --outlook --files --copilot\n"
+            "Output schema is IDENTICAL for both layouts — same PBIT template ingests either."
+        ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
-examples (rollup — default, 80%%+ row reduction):
-  python %(prog)s --input Purview_Export.csv
-  python %(prog)s -i Purview_Export.csv --output-dir ./output
+EXAMPLES
+========
 
-examples (event-level — v1-compatible 153-column output):
-  python %(prog)s --mode event-level -i Purview_Export.csv
-  python %(prog)s --mode event-level -i Purview_Export.csv --output-dir ./output
+(A) Single PAX export (PAX tool or PowerShell Search-UnifiedAuditLog):
 
-reconciliation (validate rollup correctness on a sample):
-  python %(prog)s -i Purview_Export.csv --reconcile
+    python %(prog)s --pax Purview_Export.csv
+
+    python %(prog)s --pax Purview_Export.csv --output-dir ./output
+
+
+(B) Manual 4-pull export from Purview Audit (validated chip strategy):
+
+      Teams   (7d):  MessageSent, MessageRead, ChatCreated, TeamsSessionStarted,
+                     MeetingParticipantDetail
+      Outlook (30d): MailItemsAccessed, Send, MailboxLogin
+      Files   (60d): FileAccessed, FileModified, FileDownloaded, FileUploaded
+      Copilot (30d): CopilotInteraction, AIAppInteraction   (filter by record type)
+
+    python %(prog)s ^
+        --teams   Teams_Export.csv ^
+        --outlook Outlook_Export.csv ^
+        --files   Files_Export.csv ^
+        --copilot Copilot_Export.csv ^
+        --output-dir .\output
+
+
+OUTPUT (rollup mode, both layouts produce the same three files):
+
+    <stem>_Rollup_<timestamp>.csv         13 cols  -> M365Usage table
+    <stem>_UserStats_<timestamp>.csv      27 cols  -> UserStats table
+    <stem>_SessionCohort_<timestamp>.csv   3 cols  -> SessionCohort table
+
+  <stem> defaults to the input file's name (single input) or '<firstInputStem>_Combined'
+  (multi-input). Rename the file or use --output-dir if you want a tenant-named folder.
+
+
+ADVANCED
+========
+  --reconcile         Sample-based correctness check vs full event-level explosion.
+  --debug-events      v1-compatible 153-column event-level CSV (single input only).
+  --skip-precompute   Skip UserStats and SessionCohort generation.
+  --prompt-filter     Copilot message filter: Prompt | Response | Both | Null.
+  --input/-i          Power-user / scripted fallback for one or more CSVs.
 """,
     )
-    parser.add_argument(
+
+    # ── Input layout (mutually exclusive, exactly one required) ──────────
+    layout = parser.add_argument_group(
+        "INPUT LAYOUT  (choose ONE shape that matches how you exported the data)"
+    )
+    layout.add_argument(
+        "--pax",
+        metavar="CSV",
+        help="(A) Single CSV from PAX or PowerShell Search-UnifiedAuditLog.",
+    )
+    layout.add_argument(
+        "--teams",
+        metavar="CSV",
+        help="(B) Teams workload pull from Purview Audit.",
+    )
+    layout.add_argument(
+        "--outlook",
+        metavar="CSV",
+        help="(B) Outlook / Exchange workload pull from Purview Audit.",
+    )
+    layout.add_argument(
+        "--files",
+        metavar="CSV",
+        help="(B) Files (SharePoint + OneDrive) workload pull from Purview Audit.",
+    )
+    layout.add_argument(
+        "--copilot",
+        metavar="CSV",
+        help="(B) Copilot record-type pull (CopilotInteraction + AIAppInteraction).",
+    )
+    layout.add_argument(
         "--input", "-i",
-        required=True,
-        help="Path to the input Purview audit log CSV file (must contain AuditData column).",
+        nargs="+",
+        metavar="CSV",
+        help="Power-user fallback: one or more CSV paths (any combination).",
     )
-    parser.add_argument(
+
+    # ── Output naming & location ─────────────────────────────────────────
+    output = parser.add_argument_group("OUTPUT")
+    output.add_argument(
         "--output-dir", "-o",
+        metavar="DIR",
         default=None,
-        help="Directory for output files. Default: same directory as the input file.",
+        help="Directory for output files. Default: same folder as the (first) input.",
     )
-    parser.add_argument(
-        "--mode", "-m",
-        choices=["rollup", "event-level"],
-        default="rollup",
-        help="Processing mode. 'rollup' (default): 9-column aggregated output with 80%%+ row reduction. "
-             "'event-level': v1-compatible 153-column output with one row per event.",
+
+    # ── Optional behaviour flags ─────────────────────────────────────────
+    advanced = parser.add_argument_group("ADVANCED")
+    advanced.add_argument(
+        "--skip-precompute",
+        action="store_true",
+        default=False,
+        help="Skip *_UserStats.csv and *_SessionCohort.csv (only the Rollup is written).",
     )
-    parser.add_argument(
+    advanced.add_argument(
+        "--debug-events",
+        action="store_true",
+        default=False,
+        help="Emit v1-compatible 153-column event-level CSV instead of the rollup (single input only).",
+    )
+    advanced.add_argument(
         "--reconcile",
         action="store_true",
         default=False,
-        help="Run sample-based reconciliation after processing to validate rollup correctness.",
+        help="Run sample-based reconciliation against the first input.",
     )
-    parser.add_argument(
+    advanced.add_argument(
         "--prompt-filter",
         choices=["Prompt", "Response", "Both", "Null"],
         default=None,
-        help="Filter Copilot messages: Prompt (user only), Response (AI only), Both (non-null), Null (null isPrompt).",
+        help="Filter Copilot messages by isPrompt value.",
     )
-    parser.add_argument(
-        "--no-userstats",
-        action="store_true",
-        default=False,
-        help="Skip generating *_UserStats.csv and *_SessionCohort.csv (rollup mode only).",
-    )
-    parser.add_argument(
+    advanced.add_argument(
         "--quiet", "-q",
         action="store_true",
         default=False,
         help="Suppress progress output (only errors are printed).",
+    )
+    # Hidden legacy alias (kept for older scripts that referenced --no-userstats).
+    advanced.add_argument(
+        "--no-userstats",
+        dest="skip_precompute",
+        action="store_true",
+        help=argparse.SUPPRESS,
     )
     parser.add_argument(
         "--version",
@@ -1961,51 +2264,87 @@ reconciliation (validate rollup correctness on a sample):
 
     args = parser.parse_args()
 
-    input_path = os.path.abspath(args.input)
-    if not os.path.isfile(input_path):
-        print(f"ERROR: Input file not found: {input_path}", file=sys.stderr)
-        sys.exit(1)
+    # ── Resolve the input layout into a flat list ────────────────────────
+    pax_inputs:  list[str] = [args.pax] if args.pax else []
+    workload_inputs: list[tuple[str, str]] = []  # [(label, path), ...] preserves order
+    for label in ("teams", "outlook", "files", "copilot"):
+        path = getattr(args, label)
+        if path:
+            workload_inputs.append((label, path))
+    legacy_inputs: list[str] = list(args.input) if args.input else []
 
-    # ── Determine output directory & build filenames ─────────────────────
-    stem = Path(input_path).stem
-    output_dir = Path(os.path.abspath(args.output_dir)) if args.output_dir else Path(input_path).parent
+    if pax_inputs and workload_inputs:
+        parser.error("--pax cannot be combined with --teams/--outlook/--files/--copilot. "
+                     "Pick the shape that matches your export.")
+    if (pax_inputs or workload_inputs) and legacy_inputs:
+        parser.error("--input/-i cannot be combined with --pax or the workload flags.")
+
+    if pax_inputs:
+        input_paths = [os.path.abspath(pax_inputs[0])]
+        layout_label = "pax"
+    elif workload_inputs:
+        input_paths = [os.path.abspath(p) for _, p in workload_inputs]
+        layout_label = "manual_4pull"
+    elif legacy_inputs:
+        input_paths = [os.path.abspath(p) for p in legacy_inputs]
+        layout_label = "legacy_input"
+    else:
+        parser.error(
+            "No input given. Use ONE of:\n"
+            "    --pax <CSV>                                                    (single PAX export)\n"
+            "    --teams <T> --outlook <O> --files <F> --copilot <C>            (manual 4-pull export)\n"
+            "    --input/-i <CSV> [<CSV> ...]                                   (power-user fallback)"
+        )
+
+    for p in input_paths:
+        if not os.path.isfile(p):
+            print(f"ERROR: Input file not found: {p}", file=sys.stderr)
+            sys.exit(1)
+
+    # ── Determine output directory & filenames ───────────────────────────
+    first_stem = Path(input_paths[0]).stem
+    stem = first_stem if len(input_paths) == 1 else f"{first_stem}_Combined"
+
+    output_dir = Path(os.path.abspath(args.output_dir)) if args.output_dir else Path(input_paths[0]).parent
     os.makedirs(output_dir, exist_ok=True)
 
     run_ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    event_level = args.debug_events
 
-    if args.mode == "rollup":
+    if not event_level:
         rollup_path = str(output_dir / f"{stem}_Rollup_{run_ts}.csv")
         userstats_path = str(output_dir / f"{stem}_UserStats_{run_ts}.csv")
         session_path = str(output_dir / f"{stem}_SessionCohort_{run_ts}.csv")
     else:
+        if len(input_paths) > 1:
+            print("ERROR: --debug-events accepts only one input CSV.", file=sys.stderr)
+            sys.exit(1)
         rollup_path = str(output_dir / f"{stem}_Exploded_{run_ts}.csv")
 
     # ── Dispatch ─────────────────────────────────────────────────────────
-    if args.mode == "rollup":
+    if not event_level:
         stats = run_rollup(
-            input_csv=input_path,
+            input_csv=input_paths if len(input_paths) > 1 else input_paths[0],
             output_csv=rollup_path,
             prompt_filter=args.prompt_filter,
             quiet=args.quiet,
         )
         exit_code = 1 if stats["parse_errors"] > stats["input_records"] * 0.1 else 0
 
-        # ── UserStats & SessionCohort (derived from aggregated output) ───
-        if not args.no_userstats:
+        if not args.skip_precompute:
             write_userstats_files(rollup_path, userstats_path, session_path, args.quiet)
     else:
         stats = run_explosion(
-            input_csv=input_path,
+            input_csv=input_paths[0],
             output_csv=rollup_path,
             prompt_filter=args.prompt_filter,
             quiet=args.quiet,
         )
         exit_code = 1 if stats["errors"] > 0 else 0
 
-    # ── Optional reconciliation ──────────────────────────────────────────
     if args.reconcile:
         reconcile_passed = run_reconcile(
-            input_csv=input_path,
+            input_csv=input_paths[0],
             prompt_filter=args.prompt_filter,
             quiet=args.quiet,
         )

@@ -216,17 +216,19 @@ The raw Purview CSV contains a nested `AuditData` JSON column that Power BI cann
 
 > 💡 **Don't have Python installed?** [Download the latest version at python.org](https://python.org).
 
-**From a Command Prompt or terminal window (recommended):**
+The processor (`Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py`) supports both PAX-style single-file exports and the manual 4-pull workflow in a single script.
+
+**(A) Single PAX / PowerShell export:**
 ```cmd
-python scripts\Purview_M365_Usage_Bundle_Explosion_Processor.py --input "Purview_Export.csv"
+python scripts\Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py --pax "Purview_Export.csv"
 ```
 
 <details>
-<summary><strong>Multi-export aggregation: combining several Purview CSVs into one Rollup</strong></summary>
+<summary><strong>(B) Manual 4-pull export (combining several Purview CSVs into one Rollup)</strong></summary>
 
 <br>
 
-Manual Purview exports cap at 50K (Standard) or 100K (Premium) rows per search job. The recommended workaround for medium tenants is the **4-pull strategy** — run four narrower Purview searches scoped by workload, then combine them into a single Rollup CSV.
+Manual Purview exports cap at 50K (Standard) or 100K (Premium) rows per search job. The recommended workaround for medium tenants is the **4-pull strategy** — run four narrower Purview searches scoped by workload, then process them together in a single command.
 
 **Recommended 4-pull split** (each scoped to the same 1-month window):
 
@@ -237,16 +239,14 @@ Manual Purview exports cap at 50K (Standard) or 100K (Premium) rows per search j
 | **3. Teams / Chat** | `MessageSent, MessageRead, MessagesListed, ChatRetrieved, ChatCreated, MeetingParticipantJoined, MeetingStarted, MeetingEnded, MeetingParticipantDetail, MeetingDetail, TeamsSessionStarted` |
 | **4. Copilot + Connected AI** | `CopilotInteraction, ConnectedAIAppInteraction` |
 
-Then combine into one import-ready Rollup CSV:
+Then process all four pulls together into one import-ready Rollup CSV:
 
 ```cmd
-python scripts\build_rollup_combined.py rollup_combined.csv pull1_files.csv pull2_mail.csv pull3_teams.csv pull4_copilot.csv
-```
-
-**Single-file fallback** (when only one Purview CSV is available, with agent-attribution columns preserved):
-
-```cmd
-python scripts\build_rollup_with_agents.py pull.csv rollup.csv
+python scripts\Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py ^
+    --files   "pull1_files.csv" ^
+    --outlook "pull2_mail.csv" ^
+    --teams   "pull3_teams.csv" ^
+    --copilot "pull4_copilot.csv"
 ```
 
 **Pre-flight validator** (sanity-checks a raw Purview CSV before processing — row counts, operation distribution, AuditData JSON sample):
@@ -266,34 +266,15 @@ If you are already at a Python interactive prompt (`>>>`), use `subprocess` to r
 
 ```python
 import subprocess
-subprocess.run(["python", "scripts/Purview_M365_Usage_Bundle_Explosion_Processor.py", "--input", "Purview_Export.csv"])
+subprocess.run([
+    "python", "scripts/Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py",
+    "--pax", "Purview_Export.csv"
+])
 ```
 
 </details>
 
-**PowerShell wrapper** (auto-detects Python, installs [orjson](https://pypi.org/project/orjson/) for speed):
-
-> ⚠️ **Requires PowerShell 7+.** PowerShell 5.1 (Windows PowerShell) is not supported by the wrapper script. If needed, [download and install the latest version of PowerShell](https://aka.ms/PSWindows).
-
-**From a Command Prompt or terminal window (recommended):**
-```cmd
-pwsh -ExecutionPolicy Bypass -File "scripts\Purview_M365_Usage_Bundle_Explosion_Processor.ps1" -input "Purview_Export.csv"
-```
-
-<details>
-<summary><strong>Running from a PowerShell 7 terminal window instead</strong></summary>
-
-<br>
-
-If you are already in a PowerShell 7 terminal window, run the script directly:
-
-```powershell
-.\scripts\Purview_M365_Usage_Bundle_Explosion_Processor.ps1 -input "Purview_Export.csv"
-```
-
-</details>
-
-Both produce three output files (with a shared `_<YYYYMMDD_HHMMSS>` timestamp):
+Both modes produce three output files (with a shared `_<YYYYMMDD_HHMMSS>` timestamp):
 
 | File | Contents |
 |---|---|
@@ -310,11 +291,13 @@ Note the output file paths — you'll need them in Step 4.
 
 | Parameter | Description |
 |---|---|
-| `--input` / `-i` | **(Required)** Path to the raw Purview CSV |
-| `--output-dir` / `-o` | Directory for output files (default: same as input file) |
+| `--pax` | Single PAX / PowerShell export mode — one CSV in |
+| `--teams` / `--outlook` / `--files` / `--copilot` | Manual 4-pull mode — pass one CSV per workload to combine into a single Rollup |
+| `--output-dir` / `-o` | Directory for output files (default: input file's directory) |
 | `--prompt-filter` | Filter Copilot messages: `Prompt`, `Response`, `Both`, or `Null` |
-| `--no-userstats` | Skip generating UserStats and SessionCohort files |
+| `--skip-precompute` | Skip generating UserStats and SessionCohort files |
 | `--reconcile` | Run sample-based reconciliation to validate processing correctness |
+| `--debug-events` | Emit v1-compatible 153-column event-level CSV instead of rollup |
 | `--quiet` / `-q` | Suppress progress output |
 
 **What the script does:**
@@ -323,7 +306,7 @@ Note the output file paths — you'll need them in Step 4.
 - Aggregates the flattened events into rolled-up rows keyed by (UserId, CreationDate, Operation, Workload, SourceFileExtension, AppHost)
 - Produces three output CSV files
 
-> 💡 **Performance tip:** Install [orjson](https://pypi.org/project/orjson/) (`pip install orjson`) for 5–10× faster JSON parsing. The PowerShell wrapper installs it automatically. The script falls back to Python's built-in parser if orjson is not available.
+> 💡 **Performance tip:** Install [orjson](https://pypi.org/project/orjson/) (`pip install orjson`) for 5–10× faster JSON parsing. The script falls back to Python's built-in parser if orjson is not available.
 
 </details>
 
