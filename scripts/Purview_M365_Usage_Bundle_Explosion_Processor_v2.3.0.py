@@ -127,7 +127,7 @@ import sys
 import time
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 from pathlib import Path
 from typing import Any
 
@@ -556,15 +556,23 @@ def priority_fn(m365_tier: str, cop_tier: str) -> str:
     return "Low"
 
 
-def seg_fn(days: int) -> str:
-    """Map active-day count to an activity-segment label."""
-    if days <= 5:
-        return "1. 1-5 Days (Infrequent)"
-    if days <= 10:
-        return "2. 6-10 Days (Moderate)"
-    if days <= 19:
-        return "3. 11-19 Days (Frequent)"
-    return "4. 20+ Days (Daily)"
+def seg_fn(days: int, window_days: int) -> str:
+    """Map active-day count to a per-week engagement-segment label.
+
+    Normalizes to active days per week so labels mean the same thing regardless
+    of pull length: <1, 1-2, 3-4, 5+ days/week. Window_days is the calendar
+    span (max date - min date + 1) of the rolled-up data; 0 yields No Usage.
+    """
+    if window_days <= 0 or days <= 0:
+        return "0. No Usage"
+    rate = days * 7.0 / window_days
+    if rate < 1.0:
+        return "1. <1 Day/Week (Light)"
+    if rate < 3.0:
+        return "2. 1-2 Days/Week (Moderate)"
+    if rate < 5.0:
+        return "3. 3-4 Days/Week (Frequent)"
+    return "4. 5+ Days/Week (Daily)"
 
 
 def compute_ranks(values_by_uid: dict[str, float]) -> dict[str, int]:
@@ -1909,6 +1917,11 @@ def write_userstats_files(
 
     session_ops: dict[tuple[str, str], set[str]] = defaultdict(set)
 
+    # Track every distinct CreationDate seen in the rollup so we can
+    # derive the data-window span (max - min + 1 calendar days) and
+    # normalize the engagement segmentation to active-days-per-week.
+    all_dates: set[str] = set()
+
     # ── Stream through aggregated CSV ────────────────────────────────────
     row_count = 0
     with open(agg_path, "r", encoding="utf-8-sig", newline="") as f:
@@ -1926,6 +1939,9 @@ def write_userstats_files(
             wl = row.get("Workload", "")
             ext = (row.get("SourceFileExtension", "") or "").lower()
             app_host = (row.get("AppHost", "") or "").lower()
+
+            if date_key:
+                all_dates.add(date_key)
 
             try:
                 event_count = int(row.get("EventCount", "1") or "1")
@@ -1976,6 +1992,26 @@ def write_userstats_files(
         if not quiet:
             print("[UserStats] Aggregated CSV has 0 rows — skipping.")
         return 0, 0
+
+    # ── Data-window span ────────────────────────────────────────────────
+    # Calendar-day span between the earliest and latest CreationDate in the
+    # rollup, inclusive. Used to normalize per-app engagement segments to
+    # active-days-per-week, so labels mean the same thing whether the pull
+    # covers 8 days, 30 days, or 6 months.
+    if all_dates:
+        try:
+            d_min = min(all_dates)
+            d_max = max(all_dates)
+            window_days = (
+                date.fromisoformat(d_max) - date.fromisoformat(d_min)
+            ).days + 1
+        except ValueError:
+            window_days = max(len(all_dates), 1)
+    else:
+        window_days = 1
+    if not quiet:
+        print(f"[UserStats] Data window: {window_days} calendar day(s) "
+              f"({d_min if all_dates else '?'} → {d_max if all_dates else '?'})")
 
     # ── Percentile thresholds ────────────────────────────────────────────
     all_uids = sorted(uid_original.keys())
@@ -2043,21 +2079,21 @@ def write_userstats_files(
             o_act = o_ec.get(uid, 0)
             off_act = off_ec.get(uid, 0)
 
-            t_seg = "0. No Usage" if td == 0 else seg_fn(td)
-            o_seg = "0. No Usage" if od == 0 else seg_fn(od)
-            w_seg = "0. No Usage" if wd == 0 else seg_fn(wd)
-            x_seg = "0. No Usage" if xd == 0 else seg_fn(xd)
-            p_seg = "0. No Usage" if pd_ == 0 else seg_fn(pd_)
+            t_seg = "0. No Usage" if td == 0 else seg_fn(td, window_days)
+            o_seg = "0. No Usage" if od == 0 else seg_fn(od, window_days)
+            w_seg = "0. No Usage" if wd == 0 else seg_fn(wd, window_days)
+            x_seg = "0. No Usage" if xd == 0 else seg_fn(xd, window_days)
+            p_seg = "0. No Usage" if pd_ == 0 else seg_fn(pd_, window_days)
 
             office_days = wd + xd + pd_
-            off_seg = "0. No Usage" if office_days == 0 else seg_fn(office_days)
+            off_seg = "0. No Usage" if office_days == 0 else seg_fn(office_days, window_days)
 
             overall_days = len(
                 t_days.get(uid, set()) | o_days.get(uid, set()) |
                 w_days.get(uid, set()) | x_days.get(uid, set()) |
                 p_days.get(uid, set())
             )
-            overall_seg = "0. No Usage" if overall_days == 0 else seg_fn(overall_days)
+            overall_seg = "0. No Usage" if overall_days == 0 else seg_fn(overall_days, window_days)
 
             writer.writerow([
                 uid_original[uid],
