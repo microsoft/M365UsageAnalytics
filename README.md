@@ -60,7 +60,7 @@ This section walks you through getting the dashboard running. There are **4 step
 
 ### Step 1. Export your data
 
-You need two data exports: **(a)** the M365 Unified Audit Log from Purview and **(b)** user details from Entra ID. Pick one of the three paths below — A is recommended.
+You need two data exports: **(a)** the M365 Unified Audit Log from Purview and **(b)** user details from Entra ID. Pick one of the two paths below — A is recommended.
 
 ---
 
@@ -128,35 +128,19 @@ This produces **4 import-ready CSV files**:
 
 ---
 
-#### Path B — Manual single Purview export (small tenants only)
+#### Path B — Manual 4-pull Purview export (recommended for medium / large tenants)
 
-Use this only if PAX is unavailable **and** your tenant's activity for the chosen date range fits inside a single Purview export job (50K rows for Audit Standard, 100K rows for Audit Premium). If you exceed the cap, use **Path C** instead.
+The 22 operations split across four narrower Purview searches by workload. Each pull stays well under the 50K / 100K row cap individually, and the processor in Step 2 combines them into one Rollup.
+
+**Run four Purview searches**, each over the **same** date range. For each pull, follow these seven steps but paste only the activities listed in the table below for that pull. Save each export with a distinct filename.
 
 1. Go to [purview.microsoft.com](https://purview.microsoft.com/) → **Audit** → **Search**
 2. Set your **date range** (1 month recommended for the first run; expand later)
-3. In **Activities**, paste the 22 operation types from the box below — do **not** leave this blank
+3. In **Activities**, paste the operation types for this pull from the table below — do **not** leave this blank
 4. Leave **Users** blank to capture the full tenant
 5. Click **Search** and wait for the job to complete
 6. Click the completed job → **Export results** → **Download all results**
 7. Do **not** re-save or pre-process the exported CSV — column order must be preserved exactly
-
-**Copy-paste — Activities filter (all 22 operations in one pull):**
-
-```text
-MailItemsAccessed,MailboxLogin,Send,FileAccessed,FileViewed,FilePreviewed,FileModified,FileDownloaded,FileUploaded,MessageSent,MessageRead,MessagesListed,ChatRetrieved,ChatCreated,MeetingParticipantJoined,MeetingStarted,MeetingEnded,MeetingParticipantDetail,MeetingDetail,TeamsSessionStarted,CopilotInteraction,ConnectedAIAppInteraction
-```
-
-> ⚠️ If the search hits the row cap (50K / 100K), abandon this path and **use Path C (4-pull)** — the cap silently truncates your export and the dashboard will under-report activity.
-
-After exporting, also complete **[Path D — Entra user export](#path-d--entra-user-export)**, then go to **[Step 2](#step-2-process-the-purview-exports)**.
-
----
-
-#### Path C — Manual 4-pull Purview export (recommended for medium / large tenants)
-
-The 22 operations split across four narrower Purview searches by workload. Each pull stays well under the 50K / 100K row cap individually, and the processor in Step 2 combines them into one Rollup.
-
-**Run four Purview searches**, each over the **same** date range. For each pull, follow the seven steps from Path B above but paste only the activities listed below for that pull. Save each export with a distinct filename.
 
 | # | Pull | Activities (paste into Purview **Activities** filter) | Save as |
 |---|---|---|---|
@@ -180,7 +164,7 @@ After exporting all four pulls, also complete **[Path D — Entra user export](#
 <a id="path-d--entra-user-export"></a>
 #### Path D — Entra user export
 
-Required for **both Path B and Path C** (PAX users already have this from Path A).
+Required for **Path B** (PAX users already have this from Path A).
 
 <details>
 <summary><strong>Option 1 — Entra Admin Center (simplest)</strong></summary>
@@ -255,11 +239,15 @@ After loading the dashboard, sanity-check the **Has Copilot License = True** cou
 
 **Quick cross-check** (no PowerShell required):
 
-1. Go to [Microsoft 365 admin center → Active users](https://admin.cloud.microsoft/)
-2. Click the **Licenses** filter chip → select **Microsoft 365 Copilot**
-3. The user count shown should match (±a small delta for users added/removed between export time and now)
+1. Go to the [Microsoft 365 admin center](https://admin.cloud.microsoft/) → expand **Reports**
+2. Click **Usage**
+3. Under **Reports**, click **Microsoft 365 Copilot**
+4. Click the **Copilot** sub-item
+5. Open the **Readiness** tab
 
-> ⚠️ Do **not** use this admin-center export as the dashboard's data source — it uses friendly product names instead of SKU part numbers and omits `department` / `jobTitle`. Use it only for visual verification.
+The **Total prerequisite licenses** count shown there should match the **Has Copilot License = True** count from the dashboard (±a small delta for users added/removed between export time and now).
+
+> ⚠️ Do **not** use this admin-center view as the dashboard's data source — it uses friendly product names instead of SKU part numbers and omits `department` / `jobTitle`. Use it only for visual verification.
 
 **If counts don't match (the dashboard is too low):**
 
@@ -295,19 +283,12 @@ The raw Purview CSV(s) contain a nested `AuditData` JSON column that Power BI ca
 
 > 💡 **Don't have Python installed?** [Download the latest version at python.org](https://python.org).
 
-**If you used Path B (single export):**
+**Run the processor on the four CSVs from Path B:**
 ```cmd
-python scripts\Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py --pax "Purview_Export.csv"
+python scripts\Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py --files "pull1_files.csv" --outlook "pull2_outlook.csv" --teams "pull3_teams.csv" --copilot "pull4_copilot.csv"
 ```
 
-**If you used Path C (4-pull):**
-```cmd
-python scripts\Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py ^
-    --files   "pull1_files.csv" ^
-    --outlook "pull2_outlook.csv" ^
-    --teams   "pull3_teams.csv" ^
-    --copilot "pull4_copilot.csv"
-```
+> 💡 If you have a single raw Purview CSV (for example from a legacy PAX run without `-Rollup`), use `--pax "Purview_Export.csv"` instead.
 
 Either invocation produces three output files (sharing a `_<YYYYMMDD_HHMMSS>` timestamp):
 
@@ -341,8 +322,8 @@ subprocess.run([
 
 | Parameter | Description |
 |---|---|
-| `--pax` | Single-export mode (Path B or raw PAX output) — one CSV in |
-| `--teams` / `--outlook` / `--files` / `--copilot` | 4-pull mode (Path C) — one CSV per workload, combined into a single Rollup |
+| `--pax` | Single-export mode (raw PAX output) — one CSV in |
+| `--teams` / `--outlook` / `--files` / `--copilot` | 4-pull mode (Path B) — one CSV per workload, combined into a single Rollup |
 | `--output-dir` / `-o` | Directory for output files (default: input file's directory) |
 | `--prompt-filter` | Filter Copilot messages: `Prompt`, `Response`, `Both`, or `Null` |
 | `--skip-precompute` | Skip generating UserStats and SessionCohort files |
