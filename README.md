@@ -147,9 +147,11 @@ The 22 operations split across four narrower Purview searches by workload. Each 
 | 1 | **Files / SharePoint / OneDrive** | `FileAccessed, FileViewed, FilePreviewed, FileModified, FileDownloaded, FileUploaded` | `pull1_files.csv` |
 | 2 | **Outlook / Mail** | `MailItemsAccessed, MailboxLogin, Send` | `pull2_outlook.csv` |
 | 3 | **Teams (chat + meetings + sessions)** | `MessageSent, MessageRead, MessagesListed, ChatRetrieved, ChatCreated, MeetingParticipantJoined, MeetingStarted, MeetingEnded, MeetingParticipantDetail, MeetingDetail, TeamsSessionStarted` | `pull3_teams.csv` |
-| 4 | **Copilot + Connected AI** | `CopilotInteraction, ConnectedAIAppInteraction` | `pull4_copilot.csv` |
+| 4 | **Copilot + Connected AI** *(paste into **Record types** filter — not Activities)* | `CopilotInteraction, ConnectedAIAppInteraction` | `pull4_copilot.csv` |
 
 > ⚠️ **All four pulls must cover the same date range** — otherwise per-user-per-week math in the dashboard will be off.
+>
+> ℹ️ **Pull #4 uses Record types, not Activities.** `CopilotInteraction` and `ConnectedAIAppInteraction` are record types in Purview Audit Search; paste them into the **Record types** filter (the **Activities** filter will not find them).
 >
 > ℹ️ **Meeting export window:** extend the date range on pull #3 by **+1 day** beyond your analysis period — Purview batches meeting events up to 24 hours after the meeting ends.
 >

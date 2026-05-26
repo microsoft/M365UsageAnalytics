@@ -15,3 +15,9 @@ scripts/Purview_CopilotInteraction_Processor_v1.1.0(2).py
 .git-commit-msg.txt
 .git-pr-body.md
 
+
+# Working/diagnostic files for perf branch
+_tmp_*
+_pbit22_extract/
+_tmp_smoketest_out/
+*.pbix
