@@ -31,7 +31,7 @@ Two-mode processor for Purview audit log CSV exports:
 
       After the rollup CSV is written, a second pass streams through it to produce
       two additional analytics files (unless --no-userstats is specified):
-        - UserStats:      One row per user with 27 columns of pre-computed metrics
+        - UserStats:      One row per user with 66 columns of pre-computed metrics
                           (Copilot/M365 event counts, tier classifications, priority
                           scores, usage ranks, active-day counts, activity segments).
         - SessionCohort:  One row per (UserId, App) pair with a session-count bucket
@@ -66,7 +66,7 @@ Usage:
 
 Output files (rollup mode — all share the same timestamp):
     <stem>_Rollup_<YYYYMMDD_HHMMSS>.csv         13 columns — aggregated events + agent fields
-    <stem>_UserStats_<YYYYMMDD_HHMMSS>.csv      27 columns — per-user metrics
+    <stem>_UserStats_<YYYYMMDD_HHMMSS>.csv      66 columns — per-user metrics
     <stem>_SessionCohort_<YYYYMMDD_HHMMSS>.csv   3 columns — (UserId, App, Bucket)
     (<stem> = input file's stem for single input, or '<firstStem>_Combined' for multi-input.
      Rename the output file or use --output-dir if you want a tenant-specific name.)
@@ -119,6 +119,7 @@ Version: 2.3.0
 from __future__ import annotations
 
 import argparse
+import bisect
 import csv
 import os
 import random
@@ -127,7 +128,7 @@ import sys
 import time
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone, date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -161,7 +162,7 @@ except ImportError:
 # CONSTANTS
 # ═════════════════════════════════════════════════════════════════════════════
 
-SCRIPT_VERSION = "2.3.0"
+SCRIPT_VERSION = "2.5.0"
 
 EXPLOSION_PER_RECORD_ROW_CAP = 1000
 STREAMING_CHUNK_SIZE = 5000
@@ -262,6 +263,25 @@ COPILOT_OPS: set[str] = {"CopilotInteraction", "AIAppInteraction"}  # AIAppInter
 # AppHost values that indicate an agent / connected-app interaction.
 AGENT_APPHOSTS: set[str] = {"agent", "copilotstudio", "declarativeagent", "customengineagent"}
 
+# ── DAX-aligned op/ext sets (for the CE/LP precomputed columns added in v2.4.0) ──
+# These mirror the exact filters in the PBIT measures Word/Excel/PowerPoint/Outlook/
+# Teams Activity *V2, Copilot All Apps Total, and CE Copilot Percentile.
+# Important: ops are matched AFTER OP_RENAME canonicalization, so the legacy names
+# ("FileViewed", "MeetingParticipantJoined") are listed under their canonical aliases.
+DAX_FILE_OPS: set[str] = {
+    "FileAccessed",      # canonical of legacy FileViewed (DAX checks both)
+    "FilePreviewed",
+    "FileModified",
+    "FileDownloaded",
+    "FileUploaded",
+}
+DAX_OUTLOOK_OPS: set[str] = {"Send", "MailItemsAccessed"}  # MailboxLogin intentionally excluded (matches DAX)
+DAX_TEAMS_OPS: set[str] = {
+    "MessageSent", "MessageRead", "MessagesListed", "ChatRetrieved",
+    "MeetingParticipantDetail",  # canonical of MeetingParticipantJoined
+    "MeetingStarted", "MeetingEnded", "TeamsSessionStarted",
+}
+
 USERSTATS_HEADER: list[str] = [
     "UserId",
     "CopilotEC", "M365EC", "ExCopEC", "ExM365EC",
@@ -274,7 +294,27 @@ USERSTATS_HEADER: list[str] = [
     "TeamsActivitySegment", "OutlookActivitySegment", "WordActivitySegment",
     "ExcelActivitySegment", "PowerPointActivitySegment",
     "OfficeFilesActivitySegment", "OverallM365ActivitySegment",
+    # ── v2.5.0: precomputed raw activity counts + CE percentile ranks per window.
+    # Windows: _L30 = trailing 30 days ending at max(CreationDate); _L60 = trailing 60;
+    # _Full  = entire data range. Filters match the corresponding DAX measures exactly
+    # (post-canonicalization). CE ranks are integer 0-100; blank when raw is 0.
+    "TeamsRaw_L30", "TeamsRaw_L60", "TeamsRaw_Full",
+    "OutlookRaw_L30", "OutlookRaw_L60", "OutlookRaw_Full",
+    "WordRaw_L30", "WordRaw_L60", "WordRaw_Full",
+    "ExcelRaw_L30", "ExcelRaw_L60", "ExcelRaw_Full",
+    "PowerPointRaw_L30", "PowerPointRaw_L60", "PowerPointRaw_Full",
+    "CopilotChatRaw_L30", "CopilotChatRaw_L60", "CopilotChatRaw_Full",
+    "CERank_Teams_L30", "CERank_Teams_L60", "CERank_Teams_Full",
+    "CERank_Outlook_L30", "CERank_Outlook_L60", "CERank_Outlook_Full",
+    "CERank_Word_L30", "CERank_Word_L60", "CERank_Word_Full",
+    "CERank_Excel_L30", "CERank_Excel_L60", "CERank_Excel_Full",
+    "CERank_PowerPoint_L30", "CERank_PowerPoint_L60", "CERank_PowerPoint_Full",
+    "CERank_M365AllApps_L30", "CERank_M365AllApps_L60", "CERank_M365AllApps_Full",
+    "CECopilotPercentile_L30", "CECopilotPercentile_L60", "CECopilotPercentile_Full",
 ]
+
+# v2.5.0: percentile window codes used in column names. Order matters for writer.
+RANK_WINDOWS: tuple[str, ...] = ("L30", "L60", "Full")
 
 SESSIONCOHORT_HEADER: list[str] = ["UserId", "AppColumn", "SessionCohort"]
 
@@ -1915,12 +1955,53 @@ def write_userstats_files(
     o_ec: dict[str, int] = defaultdict(int)
     off_ec: dict[str, int] = defaultdict(int)
 
+    # ── v2.5.0: DAX-aligned per-user raw activity counts, computed per window.
+    # Three windows (L30, L60, Full) feed both the LP <App> Weighted measures and the
+    # CE percentile ranks. Each is a dict keyed by window code → {uid: count}.
+    def _wbuckets() -> dict[str, dict[str, int]]:
+        return {w: defaultdict(int) for w in RANK_WINDOWS}
+    teams_raw = _wbuckets()
+    outlook_raw = _wbuckets()
+    word_raw = _wbuckets()
+    excel_raw = _wbuckets()
+    ppt_raw = _wbuckets()
+    copilot_chat_raw = _wbuckets()        # Operation = "CopilotInteraction" (LP)
+    ce_copilot_raw = _wbuckets()          # broad: Workload="Copilot" OR Op contains "CopilotInteraction" (CE)
+
     session_ops: dict[tuple[str, str], set[str]] = defaultdict(set)
 
     # Track every distinct CreationDate seen in the rollup so we can
     # derive the data-window span (max - min + 1 calendar days) and
     # normalize the engagement segmentation to active-days-per-week.
     all_dates: set[str] = set()
+
+    # ── v2.5.0: Pass 1 — determine the trailing-window cutoffs ──────────
+    # Scan CreationDate only to find the most-recent date in the rollup. Cutoffs
+    # are inclusive lower bounds; a row qualifies for window W iff date_key >= cutoff[W].
+    # The "Full" window has no cutoff and always qualifies.
+    _d_max_str = ""
+    with open(agg_path, "r", encoding="utf-8-sig", newline="") as _f:
+        _r = csv.DictReader(_f)
+        for _row in _r:
+            _dk = (_row.get("CreationDate", "") or "")[:10]
+            if _dk and _dk > _d_max_str:
+                _d_max_str = _dk
+    if _d_max_str:
+        try:
+            _d_max = date.fromisoformat(_d_max_str)
+            cutoff_l30 = (_d_max - timedelta(days=29)).isoformat()
+            cutoff_l60 = (_d_max - timedelta(days=59)).isoformat()
+        except ValueError:
+            # Bad date — fall back to "everything qualifies"
+            cutoff_l30 = ""
+            cutoff_l60 = ""
+    else:
+        # No data — sentinel that nothing qualifies for L30/L60 (Full still does)
+        cutoff_l30 = "9999-12-31"
+        cutoff_l60 = "9999-12-31"
+    if not quiet:
+        print(f"[UserStats] Window cutoffs: L30 >= {cutoff_l30 or '(all)'}, "
+              f"L60 >= {cutoff_l60 or '(all)'}, max date = {_d_max_str or '(none)'}")
 
     # ── Stream through aggregated CSV ────────────────────────────────────
     row_count = 0
@@ -1982,6 +2063,33 @@ def write_userstats_files(
                 o_ec[uid_lower] += event_count
             if ext in OFFICE_EXTS and op in FILE_OPS:
                 off_ec[uid_lower] += event_count
+
+            # ── v2.5.0: DAX-aligned raw counts, accumulated per window.
+            # Helper closure: write to Full always; to L60/L30 only if the row's
+            # date_key satisfies the trailing-window cutoff.
+            def _bump(buckets: dict[str, dict[str, int]], n: int) -> None:
+                buckets["Full"][uid_lower] += n
+                if date_key >= cutoff_l60:
+                    buckets["L60"][uid_lower] += n
+                if date_key >= cutoff_l30:
+                    buckets["L30"][uid_lower] += n
+
+            if wl == "MicrosoftTeams" and op in DAX_TEAMS_OPS:
+                _bump(teams_raw, event_count)
+            if wl == "Exchange" and op in DAX_OUTLOOK_OPS:
+                _bump(outlook_raw, event_count)
+            if op in DAX_FILE_OPS:
+                if ext in WORD_EXTS:
+                    _bump(word_raw, event_count)
+                elif ext in EXCEL_EXTS:
+                    _bump(excel_raw, event_count)
+                elif ext in PPT_EXTS:
+                    _bump(ppt_raw, event_count)
+            if op == "CopilotInteraction":
+                _bump(copilot_chat_raw, event_count)
+            # CE Copilot Percentile filter: Workload="Copilot" OR Operation contains "CopilotInteraction"
+            if wl == "Copilot" or "CopilotInteraction" in op:
+                _bump(ce_copilot_raw, event_count)
 
             # Session cohort: distinct active dates per (user, app)
             app = app_column(ext, op, wl)
@@ -2046,6 +2154,42 @@ def write_userstats_files(
     cop_rank = compute_ranks({u: cop_ec.get(u, 0) for u in copilot_uids})
     m365_rank = compute_ranks({u: m365_ec.get(u, 0) for u in all_uids})
 
+    # ── v2.5.0: CE percentile ranks per window (integer 0–100, match DAX exactly) ──
+    # DAX formula: ROUND( COUNTROWS(users with score <= mine) / COUNTROWS(users with score > 0) * 100 , 0)
+    # Users with score 0 / no activity → BLANK (we emit empty string).
+    def _ce_rank_pct(scores: dict[str, int]) -> dict[str, str]:
+        """Return DAX-exact CE percentile rank per user, as a string ('' for BLANK)."""
+        positives = sorted(v for v in scores.values() if v > 0)
+        total = len(positives)
+        out: dict[str, str] = {}
+        if total == 0:
+            return {u: "" for u in scores}
+        for u, v in scores.items():
+            if v <= 0:
+                out[u] = ""
+            else:
+                below = bisect.bisect_right(positives, v)
+                out[u] = str(round(below / total * 100))
+        return out
+
+    # M365 All Apps raw is derived per window (sum of 5 app raws). LP has no M365-AllApps
+    # measure, so we only compute the rank — not stored as a column.
+    m365_all_apps_raw = {
+        w: {
+            u: teams_raw[w].get(u, 0) + outlook_raw[w].get(u, 0) + word_raw[w].get(u, 0)
+               + excel_raw[w].get(u, 0) + ppt_raw[w].get(u, 0)
+            for u in all_uids
+        }
+        for w in RANK_WINDOWS
+    }
+    ce_rank_teams   = {w: _ce_rank_pct({u: teams_raw[w].get(u, 0)   for u in all_uids}) for w in RANK_WINDOWS}
+    ce_rank_outlook = {w: _ce_rank_pct({u: outlook_raw[w].get(u, 0) for u in all_uids}) for w in RANK_WINDOWS}
+    ce_rank_word    = {w: _ce_rank_pct({u: word_raw[w].get(u, 0)    for u in all_uids}) for w in RANK_WINDOWS}
+    ce_rank_excel   = {w: _ce_rank_pct({u: excel_raw[w].get(u, 0)   for u in all_uids}) for w in RANK_WINDOWS}
+    ce_rank_ppt     = {w: _ce_rank_pct({u: ppt_raw[w].get(u, 0)     for u in all_uids}) for w in RANK_WINDOWS}
+    ce_rank_all     = {w: _ce_rank_pct(m365_all_apps_raw[w])                              for w in RANK_WINDOWS}
+    ce_copilot_pct  = {w: _ce_rank_pct({u: ce_copilot_raw[w].get(u, 0) for u in all_uids}) for w in RANK_WINDOWS}
+
     # ── Write *_UserStats.csv ────────────────────────────────────────────
     with open(userstats_path, "w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f, lineterminator="\n")
@@ -2105,6 +2249,21 @@ def write_userstats_files(
                 t_act, o_act, off_act,
                 t_seg, o_seg, w_seg, x_seg, p_seg,
                 off_seg, overall_seg,
+                # v2.5.0: precomputed raw + CE rank columns per window (order must
+                # match USERSTATS_HEADER: 6 raws × 3 windows, then 7 ranks × 3 windows)
+                teams_raw["L30"].get(uid, 0),   teams_raw["L60"].get(uid, 0),   teams_raw["Full"].get(uid, 0),
+                outlook_raw["L30"].get(uid, 0), outlook_raw["L60"].get(uid, 0), outlook_raw["Full"].get(uid, 0),
+                word_raw["L30"].get(uid, 0),    word_raw["L60"].get(uid, 0),    word_raw["Full"].get(uid, 0),
+                excel_raw["L30"].get(uid, 0),   excel_raw["L60"].get(uid, 0),   excel_raw["Full"].get(uid, 0),
+                ppt_raw["L30"].get(uid, 0),     ppt_raw["L60"].get(uid, 0),     ppt_raw["Full"].get(uid, 0),
+                copilot_chat_raw["L30"].get(uid, 0), copilot_chat_raw["L60"].get(uid, 0), copilot_chat_raw["Full"].get(uid, 0),
+                ce_rank_teams["L30"][uid],     ce_rank_teams["L60"][uid],     ce_rank_teams["Full"][uid],
+                ce_rank_outlook["L30"][uid],   ce_rank_outlook["L60"][uid],   ce_rank_outlook["Full"][uid],
+                ce_rank_word["L30"][uid],      ce_rank_word["L60"][uid],      ce_rank_word["Full"][uid],
+                ce_rank_excel["L30"][uid],     ce_rank_excel["L60"][uid],     ce_rank_excel["Full"][uid],
+                ce_rank_ppt["L30"][uid],       ce_rank_ppt["L60"][uid],       ce_rank_ppt["Full"][uid],
+                ce_rank_all["L30"][uid],       ce_rank_all["L60"][uid],       ce_rank_all["Full"][uid],
+                ce_copilot_pct["L30"][uid],    ce_copilot_pct["L60"][uid],    ce_copilot_pct["Full"][uid],
             ])
 
     # ── Write *_SessionCohort.csv ────────────────────────────────────────
@@ -2191,7 +2350,7 @@ EXAMPLES
 OUTPUT (rollup mode, both layouts produce the same three files):
 
     <stem>_Rollup_<timestamp>.csv         13 cols  -> M365Usage table
-    <stem>_UserStats_<timestamp>.csv      27 cols  -> UserStats table
+    <stem>_UserStats_<timestamp>.csv      40 cols  -> UserStats table
     <stem>_SessionCohort_<timestamp>.csv   3 cols  -> SessionCohort table
 
   <stem> defaults to the input file's name (single input) or '<firstInputStem>_Combined'
