@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Purview M365 Usage Bundle Explosion Processor v2.3.0
+Purview M365 Usage Bundle Explosion Processor v2.5.0
 =====================================================
 Two-mode processor for Purview audit log CSV exports:
 
@@ -11,7 +11,7 @@ Two-mode processor for Purview audit log CSV exports:
       Targets 80%+ row reduction for Power BI ingestion.
       Streaming — no exploded rows held in memory.
 
-  v2.3.0 CHANGES (validated against MS Learn audit-log schema + DAX TMDL fingerprint):
+  v2.5.0 CHANGES (validated against MS Learn audit-log schema + DAX TMDL fingerprint):
       • Canonical Operation names enforced. Three legacy/wrong names auto-renamed at
         intake (OP_RENAME), preserving historical data while emitting canonical values:
             FileViewed                 → FileAccessed
@@ -50,10 +50,10 @@ Requirements:
 
 Usage:
     # (A) Single PAX / PowerShell export:
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py --pax <CSV>
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.5.0.py --pax <CSV>
 
     # (B) Manual 4-pull export from Purview Audit:
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py \
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.5.0.py \
         --teams <CSV> --outlook <CSV> --files <CSV> --copilot <CSV>
 
     Common optional flags:
@@ -86,24 +86,24 @@ Arguments:
 
 Examples:
     # Default rollup (13-column output + UserStats + SessionCohort)
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py -i Purview_Export.csv
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.5.0.py -i Purview_Export.csv
 
     # Combine the validated 4-pull bundle (Teams + Outlook + Files + Copilot) in one run
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py \
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.5.0.py \
         -i Teams_Export.csv Outlook_Export.csv Files_Export.csv Copilot_Export.csv \
         --combined-stem ZavaCorp_2025_11
 
     # Rollup with output in a different directory
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py -i Purview_Export.csv --output-dir ./output
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.5.0.py -i Purview_Export.csv --output-dir ./output
 
     # Rollup only — skip UserStats and SessionCohort generation
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py -i Purview_Export.csv --no-userstats
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.5.0.py -i Purview_Export.csv --no-userstats
 
     # v1-compatible event-level explosion (153-column output)
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py -i Purview_Export.csv --mode event-level
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.5.0.py -i Purview_Export.csv --mode event-level
 
     # Rollup with sample-based reconciliation check
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py -i Purview_Export.csv --reconcile
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.5.0.py -i Purview_Export.csv --reconcile
 
 Validated 4-pull strategy (Purview Audit → Activities filter, type+click each chip):
     Teams   (7d):  MessageSent, MessageRead, ChatCreated, TeamsSessionStarted,
@@ -113,7 +113,7 @@ Validated 4-pull strategy (Purview Audit → Activities filter, type+click each 
     Copilot (30d): CopilotInteraction, AIAppInteraction        (filter by record type)
 
 Author:  Microsoft Copilot Growth ROI Advisory Team (copilot-roi-advisory-team-gh@microsoft.com)
-Version: 2.3.0
+Version: 2.5.0
 """
 
 from __future__ import annotations
@@ -229,7 +229,7 @@ ROLLUP_HEADER: list[str] = [
 # Reconciliation sample size
 RECONCILE_SAMPLE_SIZE = 10_000
 
-# ── Operation canonicalization (v2.3.0) ──────────────────────────────────────
+# ── Operation canonicalization (v2.5.0) ──────────────────────────────────────
 # Legacy/wrong names that have appeared in older exports or older DAX models.
 # Renamed at intake so historical data merges cleanly with current canonical pulls.
 OP_RENAME: dict[str, str] = {
@@ -330,7 +330,7 @@ _CREATION_DATE_FORMATS: tuple[str, ...] = (
     "%m/%d/%Y",
 )
 
-# GroupKey type (v2.3.0): adds agent_id, agent_name, context_type so multi-agent users
+# GroupKey type (v2.5.0): adds agent_id, agent_name, context_type so multi-agent users
 # don't collapse rows together. IsAgentInteraction is derived on write from AgentId.
 # (user_id_lower, creation_date_normalized, operation, workload, sfe_lower, app_host,
 #  agent_id, agent_name, context_type)
