@@ -68,6 +68,10 @@ Output files (rollup mode — all share the same timestamp):
     <stem>_Rollup_<YYYYMMDD_HHMMSS>.csv         13 columns — aggregated events + agent fields
     <stem>_UserStats_<YYYYMMDD_HHMMSS>.csv      66 columns — per-user metrics
     <stem>_SessionCohort_<YYYYMMDD_HHMMSS>.csv   3 columns — (UserId, App, Bucket)
+    <stem>_SessionStats_<YYYYMMDD_HHMMSS>.csv    7 columns — (UserId, Date, AppHost,
+                                                              SessionCount, PromptCount,
+                                                              ResponseCount, AgentSessionCount)
+                                                  matches AI in One DISTINCTCOUNT(ThreadId)
     (<stem> = input file's stem for single input, or '<firstStem>_Combined' for multi-input.
      Rename the output file or use --output-dir if you want a tenant-specific name.)
 
@@ -162,7 +166,7 @@ except ImportError:
 # CONSTANTS
 # ═════════════════════════════════════════════════════════════════════════════
 
-SCRIPT_VERSION = "2.5.0"
+SCRIPT_VERSION = "2.6.0"
 
 EXPLOSION_PER_RECORD_ROW_CAP = 1000
 STREAMING_CHUNK_SIZE = 5000
@@ -318,6 +322,15 @@ RANK_WINDOWS: tuple[str, ...] = ("L30", "L60", "Full")
 
 SESSIONCOHORT_HEADER: list[str] = ["UserId", "AppColumn", "SessionCohort"]
 
+# v2.6.0: SessionStats — AI in One parity. Per (UserId, CreationDate, AppHost) we count
+# DISTINCT ThreadIds (matches Microsoft AI in One `Sessions` measure), plus prompt /
+# response counts and an agent-only thread count. License filtering happens downstream
+# in DAX via the EntraUsers relationship; this CSV stays license-agnostic.
+SESSIONSTATS_HEADER: list[str] = [
+    "UserId", "CreationDate", "AppHost",
+    "SessionCount", "PromptCount", "ResponseCount", "AgentSessionCount",
+]
+
 # Date formats accepted for CreationDate normalization (broadest to narrowest)
 _CREATION_DATE_FORMATS: tuple[str, ...] = (
     "%Y-%m-%dT%H:%M:%S.%fZ",
@@ -361,6 +374,31 @@ class RollupAccum:
         self.max_creation_time = max_ct
         self.original_user_id = original_uid  # first-seen casing for output
         self.is_agent_interaction = is_agent
+
+
+# SessionStats group key: (uid_lower, creation_date, app_host).
+SessionKey = tuple[str, str, str]
+
+
+class SessionAccum:
+    """Per-(user, date, app_host) Copilot session accumulator (v2.6.0).
+
+    Mirrors the AI in One `Sessions` measure: DISTINCTCOUNT(ThreadId) where at least
+    one message in the thread is a user prompt (isPrompt=True). Threads with only
+    AI responses (no user prompt) are excluded — same as the AI in One filter.
+    """
+    __slots__ = (
+        "thread_ids", "agent_thread_ids",
+        "prompt_count", "response_count",
+        "original_user_id",
+    )
+
+    def __init__(self, original_uid: str) -> None:
+        self.thread_ids: set[str] = set()
+        self.agent_thread_ids: set[str] = set()
+        self.prompt_count: int = 0
+        self.response_count: int = 0
+        self.original_user_id = original_uid
 
 
 def normalize_creation_date(raw: str) -> str:
@@ -1543,6 +1581,7 @@ def run_rollup(
     output_csv: str,
     prompt_filter: str | None = None,
     quiet: bool = False,
+    session_stats_csv: str | None = None,
 ) -> dict[str, Any]:
     """
     Streaming rollup: read one or more CSVs row-by-row → parse AuditData → extract
@@ -1552,6 +1591,11 @@ def run_rollup(
     `input_csv` accepts a single path (PAX/PowerShell single-file export) or a
     list of paths (manual 4-pull export from Purview Audit). Output schema is
     identical either way — the same PBIT template ingests both modes.
+
+    When `session_stats_csv` is provided, a parallel pass over CopilotEventData
+    accumulates per-(UserId, CreationDate, AppHost) DISTINCTCOUNT(ThreadId) +
+    prompt/response counts and writes a 7-column SessionStats CSV. This matches
+    the AI in One `Sessions` measure unit (one thread = one session).
 
     No exploded row dicts are ever stored in memory.
     """
@@ -1567,11 +1611,16 @@ def run_rollup(
 
     t_start = time.perf_counter()
     rollup: dict[GroupKey, RollupAccum] = {}
+    sessions: dict[SessionKey, SessionAccum] = {} if session_stats_csv else {}
+    track_sessions: bool = bool(session_stats_csv)
     stats: dict[str, Any] = {
         "input_records": 0,
         "virtual_exploded_event_count": 0,
         "output_rows": 0,
         "parse_errors": 0,
+        "session_rows": 0,
+        "session_threads": 0,
+        "session_prompts": 0,
     }
 
     if not quiet:
@@ -1584,6 +1633,8 @@ def run_rollup(
             for p in input_paths:
                 print(f"                  {p}")
         print(f"  Output:         {output_csv}")
+        if session_stats_csv:
+            print(f"  Session stats:  {session_stats_csv}")
         print(f"  Prompt filter:  {prompt_filter or 'None'}")
         print()
         print("Processing records (streaming rollup)...")
@@ -1649,6 +1700,36 @@ def run_rollup(
                         is_agent=is_agent,
                     )
 
+                # ── SessionStats accumulation (v2.6.0 — AI in One parity) ───
+                # Only records with a CopilotEventData payload contribute. Threads
+                # without at least one user prompt are excluded (matches AI in One
+                # `Message_isPrompt = TRUE` filter).
+                if track_sessions and ced:
+                    msgs = get_array_fast(ced, "Messages")
+                    prompts_here = 0
+                    responses_here = 0
+                    for m in msgs:
+                        ip = safe_get(m, "isPrompt")
+                        if ip is True:
+                            prompts_here += 1
+                        elif ip is False:
+                            responses_here += 1
+                    thread_id = _norm_key_str(safe_get(ced, "ThreadId"))
+                    # group_key layout: (uid_lower, creation_date, op, wl, sfe,
+                    # app_host, agent_id, agent_name, context_type)
+                    skey: SessionKey = (group_key[0], group_key[1], group_key[5])
+                    sacc = sessions.get(skey)
+                    if sacc is None:
+                        sacc = SessionAccum(original_uid=original_uid)
+                        sessions[skey] = sacc
+                    sacc.prompt_count += prompts_here
+                    sacc.response_count += responses_here
+                    if thread_id and prompts_here > 0:
+                        sacc.thread_ids.add(thread_id)
+                        if is_agent:
+                            sacc.agent_thread_ids.add(thread_id)
+                        stats["session_prompts"] += prompts_here
+
     # ── Write rollup output CSV ──────────────────────────────────────────
     stats["output_rows"] = len(rollup)
 
@@ -1678,6 +1759,28 @@ def run_rollup(
                 "TRUE" if acc.is_agent_interaction else "FALSE",
             ])
 
+    # ── SessionStats CSV (v2.6.0 — AI in One parity) ─────────────────────
+    if track_sessions:
+        os.makedirs(os.path.dirname(os.path.abspath(session_stats_csv)), exist_ok=True)
+        with open(session_stats_csv, "w", encoding="utf-8", newline="") as f:
+            writer = csv.writer(f, lineterminator="\n")
+            writer.writerow(SESSIONSTATS_HEADER)
+            for (uid_lower, cdate, ah), sacc in sessions.items():
+                session_count = len(sacc.thread_ids)
+                if session_count == 0 and sacc.prompt_count == 0:
+                    continue  # no signal — skip
+                writer.writerow([
+                    sacc.original_user_id,
+                    cdate,
+                    ah,
+                    session_count,
+                    sacc.prompt_count,
+                    sacc.response_count,
+                    len(sacc.agent_thread_ids),
+                ])
+                stats["session_rows"] += 1
+                stats["session_threads"] += session_count
+
     t_elapsed = time.perf_counter() - t_start
 
     # ── Summary report ───────────────────────────────────────────────────
@@ -1699,6 +1802,13 @@ def run_rollup(
         if stats["input_records"] > 0 and t_elapsed > 0:
             print(f"  Throughput:                 {stats['input_records'] / t_elapsed:>12,.0f} input records/sec")
         print(f"  Output file:                {output_csv}")
+        if track_sessions:
+            print()
+            print("=== SESSIONSTATS SUMMARY (AI in One parity) ===")
+            print(f"  SessionStats rows:          {stats['session_rows']:>14,}")
+            print(f"  Distinct Copilot sessions:  {stats['session_threads']:>14,}")
+            print(f"  User prompts counted:       {stats['session_prompts']:>14,}")
+            print(f"  Output file:                {session_stats_csv}")
         print()
 
     return stats
@@ -1901,7 +2011,7 @@ def run_reconcile(
         reduction_pct = 0.0
         if event_total > 0:
             reduction_pct = (1 - len(rollup_sample) / event_total) * 100
-        print(f"  Event-level rows: {event_total:,}  →  Rollup groups: {len(rollup_sample):,}"
+        print(f"  Event-level rows: {event_total:,}  ->  Rollup groups: {len(rollup_sample):,}"
               f"  ({reduction_pct:.1f}% reduction)")
         print(f"  Overall: {'ALL CHECKS PASSED' if all_pass else 'SOME CHECKS FAILED'}")
         print()
@@ -1918,11 +2028,17 @@ def write_userstats_files(
     userstats_csv_path: str | Path,
     session_csv_path: str | Path,
     quiet: bool,
+    session_stats_csv_path: str | Path | None = None,
 ) -> tuple[int, int]:
     """
     Read the just-written aggregated rollup CSV and produce two additional files:
       *_UserStats.csv     — one row per unique UserId with pre-computed metrics
       *_SessionCohort.csv — one row per (UserId, AppColumn) with session cohort label
+
+    When `session_stats_csv_path` is provided (v2.6.0+), the CECopilotPercentile_*
+    columns are computed from per-user PromptCount (human interactions) instead of
+    raw audit-event counts. This matches the AI in One semantics and prevents
+    service-principal / plugin-chain inflation from skewing the CE Quadrant.
 
     Returns (user_count, session_cohort_row_count).
     """
@@ -2119,7 +2235,7 @@ def write_userstats_files(
         window_days = 1
     if not quiet:
         print(f"[UserStats] Data window: {window_days} calendar day(s) "
-              f"({d_min if all_dates else '?'} → {d_max if all_dates else '?'})")
+              f"({d_min if all_dates else '?'} -> {d_max if all_dates else '?'})")
 
     # ── Percentile thresholds ────────────────────────────────────────────
     all_uids = sorted(uid_original.keys())
@@ -2188,7 +2304,49 @@ def write_userstats_files(
     ce_rank_excel   = {w: _ce_rank_pct({u: excel_raw[w].get(u, 0)   for u in all_uids}) for w in RANK_WINDOWS}
     ce_rank_ppt     = {w: _ce_rank_pct({u: ppt_raw[w].get(u, 0)     for u in all_uids}) for w in RANK_WINDOWS}
     ce_rank_all     = {w: _ce_rank_pct(m365_all_apps_raw[w])                              for w in RANK_WINDOWS}
-    ce_copilot_pct  = {w: _ce_rank_pct({u: ce_copilot_raw[w].get(u, 0) for u in all_uids}) for w in RANK_WINDOWS}
+
+    # ── v2.6.0: CE Copilot Percentile based on PROMPT COUNT (human interactions) ──
+    # Read the SessionStats CSV (if produced by run_rollup) and tally PromptCount per
+    # user per window. This is the AI in One semantics: one count per `isPrompt=TRUE`
+    # message — resistant to AI-response fanout, plugin chains, retries, and most
+    # service-principal noise. Falls back to audit-event tally if SessionStats is
+    # missing (older script invocations).
+    prompt_raw = _wbuckets()
+    if session_stats_csv_path:
+        _ss = Path(session_stats_csv_path)
+        if _ss.is_file():
+            with open(_ss, "r", encoding="utf-8-sig", newline="") as _f:
+                _r = csv.DictReader(_f)
+                for _row in _r:
+                    _uid = (_row.get("UserId") or "").strip().lower()
+                    if not _uid:
+                        continue
+                    _date_key = (_row.get("CreationDate") or "")[:10]
+                    try:
+                        _pc = int(_row.get("PromptCount") or 0)
+                    except ValueError:
+                        _pc = 0
+                    if _pc <= 0:
+                        continue
+                    prompt_raw["Full"][_uid] += _pc
+                    if cutoff_l60 and _date_key >= cutoff_l60:
+                        prompt_raw["L60"][_uid] += _pc
+                    if cutoff_l30 and _date_key >= cutoff_l30:
+                        prompt_raw["L30"][_uid] += _pc
+            if not quiet:
+                _tot = sum(prompt_raw["Full"].values())
+                print(f"[UserStats] CE Copilot Percentile source: PromptCount "
+                      f"({_tot:,} prompts across {len(prompt_raw['Full']):,} users)")
+        else:
+            if not quiet:
+                print(f"[UserStats] WARNING: SessionStats CSV not found: {_ss} — "
+                      f"falling back to audit-event count for CE Copilot Percentile.",
+                      file=sys.stderr)
+            prompt_raw = ce_copilot_raw  # fallback to legacy event-based percentile
+    else:
+        prompt_raw = ce_copilot_raw  # legacy mode (script invoked without SessionStats)
+
+    ce_copilot_pct  = {w: _ce_rank_pct({u: prompt_raw[w].get(u, 0) for u in all_uids}) for w in RANK_WINDOWS}
 
     # ── Write *_UserStats.csv ────────────────────────────────────────────
     with open(userstats_path, "w", encoding="utf-8", newline="") as f:
@@ -2421,6 +2579,12 @@ ADVANCED
         help="Skip *_UserStats.csv and *_SessionCohort.csv (only the Rollup is written).",
     )
     advanced.add_argument(
+        "--no-session-stats",
+        action="store_true",
+        default=False,
+        help="Skip *_SessionStats.csv (the AI in One DISTINCTCOUNT(ThreadId) output).",
+    )
+    advanced.add_argument(
         "--debug-events",
         action="store_true",
         default=False,
@@ -2510,11 +2674,16 @@ ADVANCED
         rollup_path = str(output_dir / f"{stem}_Rollup_{run_ts}.csv")
         userstats_path = str(output_dir / f"{stem}_UserStats_{run_ts}.csv")
         session_path = str(output_dir / f"{stem}_SessionCohort_{run_ts}.csv")
+        session_stats_path: str | None = (
+            None if args.no_session_stats
+            else str(output_dir / f"{stem}_SessionStats_{run_ts}.csv")
+        )
     else:
         if len(input_paths) > 1:
             print("ERROR: --debug-events accepts only one input CSV.", file=sys.stderr)
             sys.exit(1)
         rollup_path = str(output_dir / f"{stem}_Exploded_{run_ts}.csv")
+        session_stats_path = None
 
     # ── Dispatch ─────────────────────────────────────────────────────────
     if not event_level:
@@ -2523,11 +2692,15 @@ ADVANCED
             output_csv=rollup_path,
             prompt_filter=args.prompt_filter,
             quiet=args.quiet,
+            session_stats_csv=session_stats_path,
         )
         exit_code = 1 if stats["parse_errors"] > stats["input_records"] * 0.1 else 0
 
         if not args.skip_precompute:
-            write_userstats_files(rollup_path, userstats_path, session_path, args.quiet)
+            write_userstats_files(
+                rollup_path, userstats_path, session_path, args.quiet,
+                session_stats_csv_path=session_stats_path,
+            )
     else:
         stats = run_explosion(
             input_csv=input_paths[0],

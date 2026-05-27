@@ -72,16 +72,17 @@ The [PAX script](https://github.com/microsoft/PAX) pulls audit data, processes i
 .\PAX_Purview_Audit_Log_Processor.ps1 -IncludeM365Usage -Rollup -IncludeUserInfo -StartDate "2026-04-21" -EndDate "2026-05-21"
 ```
 
-This produces **4 import-ready CSV files**:
+This produces **5 import-ready CSV files**:
 
 | File | Contents |
 |---|---|
 | **Rollup** | Aggregated per-user / per-app / per-day event counts |
 | **UserStats** | One row per user with pre-computed metrics, tiers, and engagement segments |
 | **SessionCohort** | One row per (UserId, App) pair with session-count buckets |
+| **SessionStats** | One row per (UserId, Date, AppHost) with Copilot prompt / session / response / agent counts (powers the **Copilot Prompts ✨** column) |
 | **EntraUsers** | User profiles with department, job title, and Copilot license status |
 
-> After the command finishes, note the four file paths shown in the console output — you'll need them in **Step 3**. Then skip directly to **[Step 3](#step-3-open-in-power-bi-desktop)**.
+> After the command finishes, note the five file paths shown in the console output — you'll need them in **Step 3**. Then skip directly to **[Step 3](#step-3-open-in-power-bi-desktop)**.
 
 <details>
 <summary><strong>PAX command variations</strong></summary>
@@ -119,7 +120,7 @@ This produces **4 import-ready CSV files**:
 
 - **No row limits** — Manual Purview exports cap at 50K–100K rows. PAX runs parallel queries and combines results, routinely handling tens of millions of records.
 - **No date-range splitting** — PAX automatically breaks your range into time slices, runs them simultaneously, and stitches results together.
-- **Built-in post-processing** — With `-Rollup`, PAX produces the three import-ready CSVs directly. No separate processing step needed.
+- **Built-in post-processing** — With `-Rollup`, PAX produces the four import-ready CSVs directly. No separate processing step needed.
 - **Entra + Purview in one run** — With `-IncludeUserInfo`, the Entra user export (including `hasLicense` column) is produced alongside the audit data.
 - **Schedulable and unattended** — Can run on a schedule via Windows Task Scheduler or Azure Automation.
 - **Automatically resumes if interrupted** — Picks up where it left off with no lost progress.
@@ -281,7 +282,7 @@ Your tenant may have a Copilot SKU that the matcher missed (rare — `-match 'Co
 
 > **Skip this step if you used Path A (PAX with `-Rollup`).** The rollup CSVs are already import-ready. Go to [Step 3](#step-3-open-in-power-bi-desktop).
 
-The raw Purview CSV(s) contain a nested `AuditData` JSON column that Power BI cannot import directly. The included processor (`Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py`) flattens it into three import-ready CSVs.
+The raw Purview CSV(s) contain a nested `AuditData` JSON column that Power BI cannot import directly. The included processor (`Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py`) flattens it into four import-ready CSVs.
 
 > 💡 **Don't have Python installed?** [Download the latest version at python.org](https://python.org).
 
@@ -292,13 +293,14 @@ python scripts\Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py --files "
 
 > 💡 If you have a single raw Purview CSV (for example from a legacy PAX run without `-Rollup`), use `--pax "Purview_Export.csv"` instead.
 
-Either invocation produces three output files (sharing a `_<YYYYMMDD_HHMMSS>` timestamp):
+Either invocation produces four output files (sharing a `_<YYYYMMDD_HHMMSS>` timestamp):
 
 | File | Contents |
 |---|---|
 | **Rollup** (9 columns) | Aggregated event counts with min/max timestamps |
 | **UserStats** (27 columns) | One row per user with pre-computed metrics, tier classifications, and engagement segments |
 | **SessionCohort** (3 columns) | One row per (UserId, App) pair with a session-count bucket |
+| **SessionStats** (7 columns) | One row per (UserId, Date, AppHost) with `PromptCount`, `SessionCount`, `ResponseCount`, `AgentSessionCount` — source for the **Copilot Prompts ✨** measure |
 
 Note the output file paths — you'll need them in **Step 3**.
 
@@ -337,7 +339,7 @@ subprocess.run([
 - Reads each row of the raw Purview CSV(s) and parses the `AuditData` JSON column
 - Flattens nested objects and arrays (including Copilot event data with messages, contexts, and accessed resources)
 - Aggregates the flattened events into rolled-up rows keyed by (UserId, CreationDate, Operation, Workload, SourceFileExtension, AppHost)
-- Produces three output CSV files
+- Produces four output CSV files
 
 > 💡 **Performance tip:** Install [orjson](https://pypi.org/project/orjson/) (`pip install orjson`) for 5–10× faster JSON parsing. The script falls back to Python's built-in parser if orjson is not available.
 
@@ -350,14 +352,15 @@ subprocess.run([
 
 1. Open **Power BI Desktop** → **File** → **Open report** → **Browse** → select the `.pbit` template from this folder
 2. Go to **Home** → **Transform data** → **Edit parameters**
-3. Set the four file paths:
+3. Set the five file paths:
 
    | Parameter | Value |
    |---|---|
-   | `PurviewData` | Full path to the **Rollup** CSV |
-   | `UserStats` | Full path to the **UserStats** CSV |
-   | `SessionCohort` | Full path to the **SessionCohort** CSV |
-   | `EntraUsers` | Full path to your Entra user details CSV |
+   | `M365 Rollup Data` | Full path to the **Rollup** CSV |
+   | `M365 User Stats Data` | Full path to the **UserStats** CSV |
+   | `M365 Session Cohort Data` | Full path to the **SessionCohort** CSV |
+   | `M365 Session Stats Data` | Full path to the **SessionStats** CSV (powers the **Copilot Prompts ✨** column) |
+   | `Entra Users Data` | Full path to your Entra user details CSV |
 
 4. Click **OK** → **Apply changes**
 5. Click **Refresh** on the Home ribbon — allow several minutes on first load with large datasets

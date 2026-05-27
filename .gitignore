@@ -21,3 +21,13 @@ _tmp_*
 _pbit22_extract/
 _tmp_smoketest_out/
 *.pbix
+*.pbit.bak
+
+# Intermediate / diagnostic PBIT snapshots (kept on disk, not committed)
+*BISECT*.pbit
+*.BACKUP.pbit
+*.PATCHED.pbit
+*.PATCHED_v4.pbit
+*.PATCHED_v5.pbit
+M365 Usage Dashboard - May 26 v2.pbit
+_validation_report.txt
