@@ -19,7 +19,7 @@
 
 <br>
 
-**[Quick Start ↓](#-quick-start)** &nbsp;·&nbsp; **[Report Preview ↓](#report-pages-overview)** &nbsp;·&nbsp; **[What's Measured ↓](#-what-this-dashboard-shows)** &nbsp;·&nbsp; **[Troubleshooting ↓](#-troubleshooting)** &nbsp;·&nbsp; **[Email your Admin ↓](#email-your-admin)**
+**[Quick Start ↓](#quick-start)** &nbsp;·&nbsp; **[Report Preview ↓](#report-pages-overview)** &nbsp;·&nbsp; **[What's Measured ↓](#what-this-dashboard-shows)** &nbsp;·&nbsp; **[Troubleshooting ↓](#troubleshooting)** &nbsp;·&nbsp; **[Email your Admin ↓](#email-your-admin)**
 
 <br>
 
@@ -56,7 +56,7 @@ This section walks you through getting the dashboard running. There are **4 step
 - [ ] **Power BI Desktop** installed (June 2024 or later)
 - [ ] **PowerShell 7+** installed (for PAX script)
 - [ ] **Python 3.9+** installed (only needed for manual Purview exports)
-- [ ] Required admin roles assigned — see [Roles & Permissions](#-roles--permissions)
+- [ ] Required admin roles assigned — see [Roles & Permissions](#roles--permissions)
 
 > 💡 **First time? Start with 1 month of data.** A 1-month time window is the recommended starting point: it loads quickly, stays well under Purview's 50K/100K row export caps for most tenants, and produces meaningful tier rankings for an initial review. For long-running production reporting, widen the window to 90+ days once you've validated the pipeline end-to-end (more history → more stable percentile-based tier ranking).
 
@@ -671,7 +671,7 @@ Alternatively, use the [PAX script](https://github.com/microsoft/PAX) with `-Inc
 
 **Cause:** The `Has Copilot License` calculated column reads `EntraUsers[hasLicense] = TRUE` directly. The PAX script populates this column automatically; manual `entra.microsoft.com` exports do not.
 
-**Fix:** Use either the PAX script with `-IncludeUserInfo`, or the multi-SKU PowerShell snippet in **[Quick Start → Step 1 → Path D, Option 2](#step-1--export-the-required-data)**, which auto-discovers every Copilot SKU in the tenant and marks `hasLicense = TRUE` for any user holding any of them.
+**Fix:** Use either the PAX script with `-IncludeUserInfo`, or the multi-SKU PowerShell snippet in **[Quick Start → Step 1 → Path D, Option 2](#step-1-export-your-data)**, which auto-discovers every Copilot SKU in the tenant and marks `hasLicense = TRUE` for any user holding any of them.
 
 </details>
 
