@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Purview M365 Usage Bundle Explosion Processor v2.3.0
+Purview M365 Usage Bundle Explosion Processor v2.6.0
 =====================================================
 Two-mode processor for Purview audit log CSV exports:
 
@@ -50,10 +50,10 @@ Requirements:
 
 Usage:
     # (A) Single PAX / PowerShell export:
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py --pax <CSV>
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.0.py --pax <CSV>
 
     # (B) Manual 4-pull export from Purview Audit:
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py \
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.0.py \
         --teams <CSV> --outlook <CSV> --files <CSV> --copilot <CSV>
 
     Common optional flags:
@@ -90,24 +90,24 @@ Arguments:
 
 Examples:
     # Default rollup (13-column output + UserStats + SessionCohort)
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py -i Purview_Export.csv
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.0.py -i Purview_Export.csv
 
     # Combine the validated 4-pull bundle (Teams + Outlook + Files + Copilot) in one run
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py \
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.0.py \
         -i Teams_Export.csv Outlook_Export.csv Files_Export.csv Copilot_Export.csv \
         --combined-stem ZavaCorp_2025_11
 
     # Rollup with output in a different directory
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py -i Purview_Export.csv --output-dir ./output
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.0.py -i Purview_Export.csv --output-dir ./output
 
     # Rollup only — skip UserStats and SessionCohort generation
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py -i Purview_Export.csv --no-userstats
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.0.py -i Purview_Export.csv --no-userstats
 
     # v1-compatible event-level explosion (153-column output)
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py -i Purview_Export.csv --mode event-level
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.0.py -i Purview_Export.csv --mode event-level
 
     # Rollup with sample-based reconciliation check
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py -i Purview_Export.csv --reconcile
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.0.py -i Purview_Export.csv --reconcile
 
 Validated 4-pull strategy (Purview Audit → Activities filter, type+click each chip):
     Teams   (7d):  MessageSent, MessageRead, ChatCreated, TeamsSessionStarted,
@@ -117,7 +117,7 @@ Validated 4-pull strategy (Purview Audit → Activities filter, type+click each 
     Copilot (30d): CopilotInteraction, AIAppInteraction        (filter by record type)
 
 Author:  Microsoft Copilot Growth ROI Advisory Team (copilot-roi-advisory-team-gh@microsoft.com)
-Version: 2.3.0
+Version: 2.6.0
 """
 
 from __future__ import annotations

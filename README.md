@@ -282,13 +282,13 @@ Your tenant may have a Copilot SKU that the matcher missed (rare — `-match 'Co
 
 > **Skip this step if you used Path A (PAX with `-Rollup`).** The rollup CSVs are already import-ready. Go to [Step 3](#step-3-open-in-power-bi-desktop).
 
-The raw Purview CSV(s) contain a nested `AuditData` JSON column that Power BI cannot import directly. The included processor (`Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py`) flattens it into four import-ready CSVs.
+The raw Purview CSV(s) contain a nested `AuditData` JSON column that Power BI cannot import directly. The included processor (`Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.0.py`) flattens it into four import-ready CSVs.
 
 > 💡 **Don't have Python installed?** [Download the latest version at python.org](https://python.org).
 
 **Run the processor on the four CSVs from Path B:**
 ```cmd
-python scripts\Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py --files "pull1_files.csv" --outlook "pull2_outlook.csv" --teams "pull3_teams.csv" --copilot "pull4_copilot.csv"
+python scripts\Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.0.py --files "pull1_files.csv" --outlook "pull2_outlook.csv" --teams "pull3_teams.csv" --copilot "pull4_copilot.csv"
 ```
 
 > 💡 If you have a single raw Purview CSV (for example from a legacy PAX run without `-Rollup`), use `--pax "Purview_Export.csv"` instead.
@@ -312,7 +312,7 @@ Note the output file paths — you'll need them in **Step 3**.
 ```python
 import subprocess
 subprocess.run([
-    "python", "scripts/Purview_M365_Usage_Bundle_Explosion_Processor_v2.3.0.py",
+    "python", "scripts/Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.0.py",
     "--pax", "Purview_Export.csv"
 ])
 ```
