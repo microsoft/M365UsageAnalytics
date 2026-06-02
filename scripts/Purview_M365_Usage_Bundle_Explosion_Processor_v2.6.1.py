@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Purview M365 Usage Bundle Explosion Processor v2.6.0
+Purview M365 Usage Bundle Explosion Processor v2.6.1
 =====================================================
 Two-mode processor for Purview audit log CSV exports:
 
@@ -50,10 +50,10 @@ Requirements:
 
 Usage:
     # (A) Single PAX / PowerShell export:
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.0.py --pax <CSV>
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.1.py --pax <CSV>
 
     # (B) Manual 4-pull export from Purview Audit:
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.0.py \
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.1.py \
         --teams <CSV> --outlook <CSV> --files <CSV> --copilot <CSV>
 
     Common optional flags:
@@ -68,10 +68,13 @@ Output files (rollup mode — all share the same timestamp):
     <stem>_Rollup_<YYYYMMDD_HHMMSS>.csv         13 columns — aggregated events + agent fields
     <stem>_UserStats_<YYYYMMDD_HHMMSS>.csv      66 columns — per-user metrics
     <stem>_SessionCohort_<YYYYMMDD_HHMMSS>.csv   3 columns — (UserId, App, Bucket)
-    <stem>_SessionStats_<YYYYMMDD_HHMMSS>.csv    7 columns — (UserId, Date, AppHost,
+    <stem>_SessionStats_<YYYYMMDD_HHMMSS>.csv    8 columns — (UserId, Date, AppHost,
                                                               SessionCount, PromptCount,
+                                                              AgentPromptCount,
                                                               ResponseCount, AgentSessionCount)
-                                                  matches AI in One DISTINCTCOUNT(ThreadId)
+                                                  matches AI in One DISTINCTCOUNT(ThreadId);
+                                                  AgentPromptCount = prompts on agent-flagged
+                                                  threads (v2.6.1)
     (<stem> = input file's stem for single input, or '<firstStem>_Combined' for multi-input.
      Rename the output file or use --output-dir if you want a tenant-specific name.)
 
@@ -90,24 +93,24 @@ Arguments:
 
 Examples:
     # Default rollup (13-column output + UserStats + SessionCohort)
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.0.py -i Purview_Export.csv
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.1.py -i Purview_Export.csv
 
     # Combine the validated 4-pull bundle (Teams + Outlook + Files + Copilot) in one run
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.0.py \
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.1.py \
         -i Teams_Export.csv Outlook_Export.csv Files_Export.csv Copilot_Export.csv \
         --combined-stem ZavaCorp_2025_11
 
     # Rollup with output in a different directory
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.0.py -i Purview_Export.csv --output-dir ./output
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.1.py -i Purview_Export.csv --output-dir ./output
 
     # Rollup only — skip UserStats and SessionCohort generation
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.0.py -i Purview_Export.csv --no-userstats
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.1.py -i Purview_Export.csv --no-userstats
 
     # v1-compatible event-level explosion (153-column output)
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.0.py -i Purview_Export.csv --mode event-level
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.1.py -i Purview_Export.csv --mode event-level
 
     # Rollup with sample-based reconciliation check
-    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.0.py -i Purview_Export.csv --reconcile
+    python Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.1.py -i Purview_Export.csv --reconcile
 
 Validated 4-pull strategy (Purview Audit → Activities filter, type+click each chip):
     Teams   (7d):  MessageSent, MessageRead, ChatCreated, TeamsSessionStarted,
@@ -117,7 +120,7 @@ Validated 4-pull strategy (Purview Audit → Activities filter, type+click each 
     Copilot (30d): CopilotInteraction, AIAppInteraction        (filter by record type)
 
 Author:  Microsoft Copilot Growth ROI Advisory Team (copilot-roi-advisory-team-gh@microsoft.com)
-Version: 2.6.0
+Version: 2.6.1
 """
 
 from __future__ import annotations
@@ -166,7 +169,7 @@ except ImportError:
 # CONSTANTS
 # ═════════════════════════════════════════════════════════════════════════════
 
-SCRIPT_VERSION = "2.6.0"
+SCRIPT_VERSION = "2.6.1"
 
 EXPLOSION_PER_RECORD_ROW_CAP = 1000
 STREAMING_CHUNK_SIZE = 5000
@@ -322,13 +325,16 @@ RANK_WINDOWS: tuple[str, ...] = ("L30", "L60", "Full")
 
 SESSIONCOHORT_HEADER: list[str] = ["UserId", "AppColumn", "SessionCohort"]
 
-# v2.6.0: SessionStats — AI in One parity. Per (UserId, CreationDate, AppHost) we count
+# v2.6.1: SessionStats — AI in One parity. Per (UserId, CreationDate, AppHost) we count
 # DISTINCT ThreadIds (matches Microsoft AI in One `Sessions` measure), plus prompt /
 # response counts and an agent-only thread count. License filtering happens downstream
 # in DAX via the EntraUsers relationship; this CSV stays license-agnostic.
+# v2.6.1: Added AgentPromptCount — exact chat vs agent split at message-tally time
+# (uses the same is_agent flag the rollup already determines per record).
 SESSIONSTATS_HEADER: list[str] = [
     "UserId", "CreationDate", "AppHost",
-    "SessionCount", "PromptCount", "ResponseCount", "AgentSessionCount",
+    "SessionCount", "PromptCount", "AgentPromptCount",
+    "ResponseCount", "AgentSessionCount",
 ]
 
 # Date formats accepted for CreationDate normalization (broadest to narrowest)
@@ -381,7 +387,7 @@ SessionKey = tuple[str, str, str]
 
 
 class SessionAccum:
-    """Per-(user, date, app_host) Copilot session accumulator (v2.6.0).
+    """Per-(user, date, app_host) Copilot session accumulator (v2.6.1).
 
     Mirrors the AI in One `Sessions` measure: DISTINCTCOUNT(ThreadId) where at least
     one message in the thread is a user prompt (isPrompt=True). Threads with only
@@ -389,7 +395,7 @@ class SessionAccum:
     """
     __slots__ = (
         "thread_ids", "agent_thread_ids",
-        "prompt_count", "response_count",
+        "prompt_count", "agent_prompt_count", "response_count",
         "original_user_id",
     )
 
@@ -397,6 +403,7 @@ class SessionAccum:
         self.thread_ids: set[str] = set()
         self.agent_thread_ids: set[str] = set()
         self.prompt_count: int = 0
+        self.agent_prompt_count: int = 0  # v2.6.1: prompts on agent-flagged threads
         self.response_count: int = 0
         self.original_user_id = original_uid
 
@@ -1700,7 +1707,7 @@ def run_rollup(
                         is_agent=is_agent,
                     )
 
-                # ── SessionStats accumulation (v2.6.0 — AI in One parity) ───
+                # ── SessionStats accumulation (v2.6.1 — AI in One parity) ───
                 # Only records with a CopilotEventData payload contribute. Threads
                 # without at least one user prompt are excluded (matches AI in One
                 # `Message_isPrompt = TRUE` filter).
@@ -1724,6 +1731,8 @@ def run_rollup(
                         sessions[skey] = sacc
                     sacc.prompt_count += prompts_here
                     sacc.response_count += responses_here
+                    if is_agent:
+                        sacc.agent_prompt_count += prompts_here  # v2.6.1: exact chat/agent split
                     if thread_id and prompts_here > 0:
                         sacc.thread_ids.add(thread_id)
                         if is_agent:
@@ -1759,7 +1768,7 @@ def run_rollup(
                 "TRUE" if acc.is_agent_interaction else "FALSE",
             ])
 
-    # ── SessionStats CSV (v2.6.0 — AI in One parity) ─────────────────────
+    # ── SessionStats CSV (v2.6.1 — AI in One parity) ─────────────────────
     if track_sessions:
         os.makedirs(os.path.dirname(os.path.abspath(session_stats_csv)), exist_ok=True)
         with open(session_stats_csv, "w", encoding="utf-8", newline="") as f:
@@ -1775,6 +1784,7 @@ def run_rollup(
                     ah,
                     session_count,
                     sacc.prompt_count,
+                    sacc.agent_prompt_count,  # v2.6.1
                     sacc.response_count,
                     len(sacc.agent_thread_ids),
                 ])
@@ -2035,7 +2045,7 @@ def write_userstats_files(
       *_UserStats.csv     — one row per unique UserId with pre-computed metrics
       *_SessionCohort.csv — one row per (UserId, AppColumn) with session cohort label
 
-    When `session_stats_csv_path` is provided (v2.6.0+), the CECopilotPercentile_*
+    When `session_stats_csv_path` is provided (v2.6.1+), the CECopilotPercentile_*
     columns are computed from per-user PromptCount (human interactions) instead of
     raw audit-event counts. This matches the AI in One semantics and prevents
     service-principal / plugin-chain inflation from skewing the CE Quadrant.
@@ -2305,7 +2315,7 @@ def write_userstats_files(
     ce_rank_ppt     = {w: _ce_rank_pct({u: ppt_raw[w].get(u, 0)     for u in all_uids}) for w in RANK_WINDOWS}
     ce_rank_all     = {w: _ce_rank_pct(m365_all_apps_raw[w])                              for w in RANK_WINDOWS}
 
-    # ── v2.6.0: CE Copilot Percentile based on PROMPT COUNT (human interactions) ──
+    # ── v2.6.1: CE Copilot Percentile based on PROMPT COUNT (human interactions) ──
     # Read the SessionStats CSV (if produced by run_rollup) and tally PromptCount per
     # user per window. This is the AI in One semantics: one count per `isPrompt=TRUE`
     # message — resistant to AI-response fanout, plugin chains, retries, and most
