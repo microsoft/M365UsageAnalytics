@@ -51,7 +51,13 @@
 
 Open [M365 Dashboard - DEMO PBIX.pbix](M365%20Dashboard%20-%20DEMO%20PBIX.pbix) to explore the report immediately with cached synthetic `@example.com` users. This PBIX is for preview and testing only; it is not the tenant-data template.
 
-For your own Purview and Entra data, use [M365 Usage Dashboard - June 2 2026.pbit](M365%20Usage%20Dashboard%20-%20June%202%202026.pbit) and follow the [Quick Start](#quick-start). The PBIT remains the primary template and is not replaced or removed. See the updated [Interpretation Guide](M365%20Usage%20Dashboard%20-%20Interpretation%20Guide.pdf) and [animated report preview](images/report-pages-carousel.gif).
+For your own Purview and Entra data, use [M365 Usage Dashboard - June 2 2026.pbit](M365%20Usage%20Dashboard%20-%20June%202%202026.pbit) and follow the [Quick Start](#quick-start). The PBIT remains the primary template and is not replaced or removed. See the updated [Interpretation Guide](M365%20Usage%20Dashboard%20-%20Interpretation%20Guide.pdf).
+
+![M365 Usage Dashboard — animated report preview](images/report-pages-carousel.gif)
+
+> 🎬 **New — M365 Usage Dashboard Overview (video):** a quick video walkthrough of the dashboard's capabilities — the fastest way to see what it does before diving into setup.
+>
+> https://github.com/user-attachments/assets/c2205bbc-5a4c-4c48-bab8-c9170e00bdf7
 
 ---
 
@@ -430,7 +436,6 @@ Copilot licensing decisions shouldn't be made on gut feel or org chart. This rep
 
 The dashboard includes **8 interactive report pages**. See the [Interpretation Guide](M365%20Usage%20Dashboard%20-%20Interpretation%20Guide.pdf) for a detailed walkthrough of each page.
 
-[![Report Pages Slideshow](images/report-pages-carousel.gif)](images/report-pages-carousel.gif)
 *💡 Expand any report page section below to view a full-size still screenshot.*
 
 ---
