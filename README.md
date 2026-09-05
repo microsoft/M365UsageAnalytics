@@ -57,7 +57,7 @@ For your own Purview and Entra data, use [M365 Usage Dashboard - June 2 2026.pbi
 
 > 🎬 **New — M365 Usage Dashboard Overview (video):** a quick video walkthrough of the dashboard's capabilities — the fastest way to see what it does before diving into setup.
 >
-> https://github.com/user-attachments/assets/c2205bbc-5a4c-4c48-bab8-c9170e00bdf7
+> https://github.com/microsoft/M365UsageAnalytics/releases/download/M365_Usage_Analytics/M365UsageAnalytics_Overview.mp4
 
 ---
 
@@ -471,51 +471,51 @@ Every user ranked by a weighted composite score (0–100) blending their percent
 </details>
 
 <details>
-<summary><strong>4. Copilot Enablement Strategy</strong></summary>
+<summary><strong>4. Copilot License Optimizer</strong></summary>
 
-A 2×2 quadrant model classifying every user into four segments: **Enablement Targets** (high M365 / low Copilot — best training candidates), **Champions** (high on both — peer advocates), **AI-First** (low M365 / high Copilot), and **Low Engagement** (low on both). Filter by app to see workflow-specific quadrants, and sort by the Enablement Gap column to find users with the largest gap between M365 activity and Copilot adoption.
+Review existing licenses against a selectable 30-, 60-, or 90-day inactivity window. The left table shows only inactive licensed users and recommends **Enable** or **Reclaim** based on recent M365 activity. The right table ranks unlicensed License-First candidates using the selected Copilot, Agent, and M365 signals.
 
-[![Copilot Enablement Strategy](images/4%20-%20Copilot%20Enablement%20Strategy.png)](images/4%20-%20Copilot%20Enablement%20Strategy.png)
+[![Copilot License Optimizer](images/4%20-%20Copilot%20License%20Optimizer.png)](images/4%20-%20Copilot%20License%20Optimizer.png)
 *Click image to enlarge*
 
 </details>
 
 <details>
-<summary><strong>5. Glossary and Metric Definitions</strong></summary>
+<summary><strong>5. Copilot Enablement Strategy</strong></summary>
 
-In-report reference covering every metric, quadrant, tier label, engagement segment, and scoring methodology used across the dashboard. Includes definitions for active days, app tiers, composite scores, enablement gaps, and action categories so the report can be shared broadly without external documentation.
+A table-first workflow classifying every user into four cohorts: **Enablement Targets** (high M365 / low Copilot), **Champions** (high on both), **AI-First** (low M365 / high Copilot), and **Low Engagement** (low on both). Select an activity lens to compare app-specific percentiles, then sort by Enablement Gap to prioritize targeted training.
 
-[![Glossary and Metric Definitions](images/5%20-%20Glossary%20and%20Metric%20Definitions.png)](images/5%20-%20Glossary%20and%20Metric%20Definitions.png)
+[![Copilot Enablement Strategy](images/5%20-%20Copilot%20Enablement%20Strategy.png)](images/5%20-%20Copilot%20Enablement%20Strategy.png)
 *Click image to enlarge*
 
 </details>
 
 <details>
-<summary><strong>6. M365 Usage Activity</strong></summary>
+<summary><strong>6. Copilot Champions</strong></summary>
 
-Four KPI cards covering total users, M365 actions, average actions per week, and average active days. A bar chart ranks apps by average active days per user per week, and a segmentation chart groups users by engagement level — **Daily** (5+ days/week), **Frequent** (3–4), **Moderate** (1–2), **Light** (<1), and **Inactive** (0). Thresholds are computed by the processor as `active_days × 7 ÷ window_days`, where `window_days` is the calendar span of your Purview pull, so the labels mean the same thing whether the data covers 8 days or 6 months. A comparison chart shows whether Copilot-licensed users are more active than unlicensed users.
+Identify top-decile Copilot users, compare their activity with the tenant average, and see which champions also use Copilot agents. Filter by lookback window, champion tier, agent activity, and department; export the ranked table to recruit pilot leaders and peer advocates.
 
-[![M365 Usage Activity](images/6%20-%20M365%20Usage%20Activity.png)](images/6%20-%20M365%20Usage%20Activity.png)
+[![Copilot Champions](images/6%20-%20Copilot%20Champions.png)](images/6%20-%20Copilot%20Champions.png)
 *Click image to enlarge*
 
 </details>
 
 <details>
-<summary><strong>7. Copilot Enablement Strategy — Priority Table</strong></summary>
+<summary><strong>7. Glossary and Metric Definitions</strong></summary>
 
-Each user assigned a Priority level (Critical, High, Medium, Promoter, Low) and a recommended Action (Immediate Training, Train Next, Advanced Training, Monitor) based on the ratio of M365 activity to Copilot usage. App Tier and Copilot Tier columns show each user's relative standing. Filter by app and priority level to generate targeted training outreach lists.
+Page-aware reference covering the measures, selectors, thresholds, and analytical concepts used across the dashboard. Filter by one or more report pages to focus the table on the definitions relevant to the analysis in front of you.
 
-[![Copilot Enablement Strategy — Priority Table](images/7%20-%20Copilot%20Enablement%20Strategy%20-%20Priority%20Table.png)](images/7%20-%20Copilot%20Enablement%20Strategy%20-%20Priority%20Table.png)
+[![Glossary and Metric Definitions](images/7%20-%20Glossary%20and%20Metric%20Definitions.png)](images/7%20-%20Glossary%20and%20Metric%20Definitions.png)
 *Click image to enlarge*
 
 </details>
 
 <details>
-<summary><strong>8. M365 Copilot Licensing Strategy</strong></summary>
+<summary><strong>8. M365 Usage Activity</strong></summary>
 
-A tier-based licensing planner with four waves: **Prioritize** (top M365 users — license immediately), **License Next** (strong candidates for the next quarter), **Enablement** (moderate usage — train before licensing), and **Monitor** (low activity — revisit later). Color-coded cells show each user's tier in Teams, Outlook, Word, Excel, and PowerPoint. Filter by action tier to export ready-made licensing request lists.
+Four KPI cards cover total users, M365 actions, average actions per week, and average active days. Compare active-day consistency by app and Copilot license status, then review the normalized engagement distribution: **Daily** (5+ days/week), **Frequent** (3–4), **Moderate** (1–2), and **Light** (&lt;1).
 
-[![M365 Copilot Licensing Strategy](images/8%20-%20M365%20Copilot%20Licensing%20Strategy.png)](images/8%20-%20M365%20Copilot%20Licensing%20Strategy.png)
+[![M365 Usage Activity](images/8%20-%20M365%20Usage%20Activity.png)](images/8%20-%20M365%20Usage%20Activity.png)
 *Click image to enlarge*
 
 </details>
@@ -788,11 +788,11 @@ Use the report pages in this order to tell a complete Copilot readiness story:
 1. **Executive Summary** — Overall tenant snapshot
 2. **M365 Usage Trends** — Week-over-week engagement by app
 3. **Copilot License Recommendations** — Ranked candidates with adjustable weights
-4. **Copilot Enablement Strategy** — 2×2 quadrant: Champions, Enablement Targets, AI-First, Low Engagement
-5. **Glossary & Definitions** — Tier definitions, scoring methodology
-6. **M365 Usage Activity** — Baseline engagement segments, active day comparisons
-7. **Enablement Strategy — Priority Table** — Critical/High/Medium/Promoter/Low with recommended actions
-8. **Copilot Licensing Strategy** — Tier-based wave planner: Prioritize, License Next, Enablement, Monitor
+4. **Copilot License Optimizer** — Inactive-license reclamation and License-First assignments
+5. **Copilot Enablement Strategy** — Champions, Enablement Targets, AI-First, and Low Engagement
+6. **Copilot Champions** — Peer advocate and pilot-lead identification
+7. **Glossary & Definitions** — Page-filtered metric and methodology reference
+8. **M365 Usage Activity** — Engagement segments and active-day comparisons
 
 </details>
 
