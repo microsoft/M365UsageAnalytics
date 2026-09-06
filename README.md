@@ -51,7 +51,7 @@
 
 Open [M365 Dashboard - DEMO PBIX.pbix](M365%20Dashboard%20-%20DEMO%20PBIX.pbix) to explore the report immediately with cached synthetic `@example.com` users. This PBIX is for preview and testing only; it is not the tenant-data template.
 
-For your own Purview and Entra data, use [M365 Usage Dashboard - June 2 2026.pbit](M365%20Usage%20Dashboard%20-%20June%202%202026.pbit) and follow the [Quick Start](#quick-start). The PBIT remains the primary template and is not replaced or removed. See the updated [Interpretation Guide](M365%20Usage%20Dashboard%20-%20Interpretation%20Guide.pdf).
+For your own Purview and Entra data, use [M365 Usage Dashboard - September 5 2026.pbit](M365%20Usage%20Dashboard%20-%20September%205%202026.pbit) and follow the [Quick Start](#quick-start). The PBIT remains the primary template and is not replaced or removed. See the updated [Interpretation Guide](M365%20Usage%20Dashboard%20-%20Interpretation%20Guide.pdf).
 
 ![M365 Usage Dashboard — animated report preview](images/report-pages-carousel.gif)
 
@@ -305,13 +305,13 @@ Your tenant may have a Copilot SKU that the matcher missed (rare — `-match 'Co
 
 > **Skip this step if you used Path A (PAX with `-Rollup`).** The rollup CSVs are already import-ready. Go to [Step 3](#step-3-open-in-power-bi-desktop).
 
-The raw Purview CSV(s) contain a nested `AuditData` JSON column that Power BI cannot import directly. The included processor (`Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.0.py`) flattens it into four import-ready CSVs.
+The raw Purview CSV(s) contain a nested `AuditData` JSON column that Power BI cannot import directly. The included processor (`Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.1.py`) flattens it into four import-ready CSVs.
 
 > 💡 **Don't have Python installed?** [Download the latest version at python.org](https://python.org).
 
 **Run the processor on the four CSVs from Path B:**
 ```cmd
-python scripts\Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.0.py --files "pull1_files.csv" --outlook "pull2_outlook.csv" --teams "pull3_teams.csv" --copilot "pull4_copilot.csv"
+python scripts\Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.1.py --files "pull1_files.csv" --outlook "pull2_outlook.csv" --teams "pull3_teams.csv" --copilot "pull4_copilot.csv"
 ```
 
 > 💡 If you have a single raw Purview CSV (for example from a legacy PAX run without `-Rollup`), use `--pax "Purview_Export.csv"` instead.
@@ -327,6 +327,8 @@ Either invocation produces four output files (sharing a `_<YYYYMMDD_HHMMSS>` tim
 
 Note the output file paths — you'll need them in **Step 3**.
 
+> **Makeover data requirement:** use the default v2.6.1 outputs. Do not use `--skip-precompute` or `--no-session-stats`; **Department Readiness** requires UserStats and SessionStats, and **Adoption Momentum** requires SessionStats plus at least **60 days** of source history for a meaningful current-versus-previous 30-day comparison. Shorter extracts are suitable for compatibility testing only.
+
 <details>
 <summary><strong>Running from a Python interactive terminal instead</strong></summary>
 
@@ -335,7 +337,7 @@ Note the output file paths — you'll need them in **Step 3**.
 ```python
 import subprocess
 subprocess.run([
-    "python", "scripts/Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.0.py",
+    "python", "scripts/Purview_M365_Usage_Bundle_Explosion_Processor_v2.6.1.py",
     "--pax", "Purview_Export.csv"
 ])
 ```
@@ -354,6 +356,7 @@ subprocess.run([
 | `--output-dir` / `-o` | Directory for output files (default: input file's directory) |
 | `--prompt-filter` | Filter Copilot messages: `Prompt`, `Response`, `Both`, or `Null` |
 | `--skip-precompute` | Skip generating UserStats and SessionCohort files |
+| `--no-session-stats` | Skip generating SessionStats; do not use with the ten-page makeover |
 | `--reconcile` | Run sample-based reconciliation to validate processing correctness |
 | `--debug-events` | Emit v1-compatible 153-column event-level CSV instead of rollup |
 | `--quiet` / `-q` | Suppress progress output |
@@ -413,14 +416,16 @@ Copilot licensing decisions shouldn't be made on gut feel or org chart. This rep
 
 | Report Page | What You Can Answer |
 |---|---|
-| **M365 App Usage Report** | What is our overall M365 adoption rate? Which apps are driving the most engagement? |
+| **Executive Summary** | What is our overall M365 adoption footprint, app action mix, Copilot reach, and organizational coverage? |
 | **M365 Usage Trends** | How is activity trending week over week? Which apps dominate the workload mix? |
+| **Department Readiness Benchmark** | Which departments are ready to license, enable, monitor, or scale through champions? |
+| **Adoption Momentum** | Who is accelerating, stable, declining, newly active, or stalled across the latest and previous 30 days? |
 | **Copilot License Recommendations** | Who should get a Copilot license first based on weighted M365 usage? |
-| **Copilot Enablement Strategy** | Where are the biggest gaps between M365 usage and Copilot adoption? Who are Champions vs. Enablement Targets? |
-| **Glossary and Metric Definitions** | Definitions for all metrics, tiers, engagement segments, and scoring methodology. |
 | **M365 Usage Activity** | How are users distributed across engagement segments? Are Copilot-licensed users more active? |
-| **Enablement Strategy — Priority Table** | Which users need training most urgently? What is each user's recommended next action? |
-| **M365 Copilot Licensing Strategy** | Which users should be licensed in each wave? How do users rank across all M365 apps? |
+| **Copilot Enablement Strategy** | Where are the biggest gaps between M365 usage and Copilot adoption? Who are Champions vs. Enablement Targets? |
+| **Copilot License Optimizer** | Which inactive licenses should be enabled or reclaimed, and who should receive the next available licenses? |
+| **Copilot Champions** | Who can lead pilots, peer learning, and champion-led scale? |
+| **Glossary and Metric Definitions** | What do the report's metrics, tiers, segments, thresholds, and recommendations mean? |
 
 </details>
 
@@ -430,22 +435,22 @@ Copilot licensing decisions shouldn't be made on gut feel or org chart. This rep
 ## 🖥️ Report Preview
 
 <details>
-<summary><strong>Expand to view all 8 report pages</strong></summary>
+<summary><strong>Expand to view all 10 report pages</strong></summary>
 
 <br>
 
-The dashboard includes **8 interactive report pages**. See the [Interpretation Guide](M365%20Usage%20Dashboard%20-%20Interpretation%20Guide.pdf) for a detailed walkthrough of each page.
+The dashboard includes **10 interactive report pages**. See the [Interpretation Guide](M365%20Usage%20Dashboard%20-%20Interpretation%20Guide.pdf) for a detailed walkthrough of each page.
 
 *💡 Expand any report page section below to view a full-size still screenshot.*
 
 ---
 
 <details>
-<summary><strong>1. M365 App Usage Report</strong></summary>
+<summary><strong>1. Executive Summary</strong></summary>
 
-Your landing page — six headline KPI cards (total M365 users, Teams activity, email activity, document activity, Copilot users, and departments tracked), a stacked bar chart breaking down total events by app and action type, and a Report Highlights panel linking to the dashboard's four main analytical sections.
+Your landing page — six headline KPI cards for M365 reach, major app activity, Copilot users, and departments tracked, plus a stacked chart that separates each app total into its underlying action types.
 
-[![M365 App Usage Report](images/1%20-%20M365%20App%20Usage%20Report.png)](images/1%20-%20M365%20App%20Usage%20Report.png)
+[![Executive Summary](images/1%20-%20Executive%20Summary.png)](images/1%20-%20Executive%20Summary.png)
 *Click image to enlarge*
 
 </details>
@@ -461,61 +466,81 @@ Headline KPIs for total users, active users, all-app actions, and average action
 </details>
 
 <details>
-<summary><strong>3. Copilot License Recommendations</strong></summary>
+<summary><strong>3. Department Readiness Benchmark</strong></summary>
+
+Compare normalized readiness signals by department: license coverage, active licensed utilization, prompts per active user, champion rate, readiness gap, and enablement target rate. The action table highlights where to license, enable, monitor, or scale through champions.
+
+[![Department Readiness Benchmark](images/3%20-%20Department%20Readiness%20Benchmark.png)](images/3%20-%20Department%20Readiness%20Benchmark.png)
+*Click image to enlarge*
+
+</details>
+
+<details>
+<summary><strong>4. Adoption Momentum</strong></summary>
+
+Compare the latest 30 days with the previous 30 days for M365 actions or Copilot prompts. Users and departments are classified as New, Accelerating, Stable, Declining, or Stalled Licensed, with recommended actions for each cohort. Load at least 60 days of history for a complete comparison.
+
+[![Adoption Momentum](images/4%20-%20Adoption%20Momentum.png)](images/4%20-%20Adoption%20Momentum.png)
+*Click image to enlarge*
+
+</details>
+
+<details>
+<summary><strong>5. Copilot License Recommendations</strong></summary>
 
 Every user ranked by a weighted composite score (0–100) blending their percentile across selected M365 apps. Choose from four profile presets — Balanced, Collaboration Focus, Content Creation, or Custom — to model different licensing scenarios. Users are classified into action categories: License First (≥90th percentile), License Next (75th–89th), Potential (50th–74th), and Developing (<50th). A Customize Weight panel lets you manually adjust per-app weights.
 
-[![Copilot License Recommendations](images/3%20-%20Copilot%20License%20Recommendations.png)](images/3%20-%20Copilot%20License%20Recommendations.png)
+[![Copilot License Recommendations](images/5%20-%20Copilot%20License%20Recommendations.png)](images/5%20-%20Copilot%20License%20Recommendations.png)
 *Click image to enlarge*
 
 </details>
 
 <details>
-<summary><strong>4. Copilot License Optimizer</strong></summary>
+<summary><strong>6. M365 Usage Activity</strong></summary>
 
-Review existing licenses against a selectable 30-, 60-, or 90-day inactivity window. The left table shows only inactive licensed users and recommends **Enable** or **Reclaim** based on recent M365 activity. The right table ranks unlicensed License-First candidates using the selected Copilot, Agent, and M365 signals.
+Four KPI cards cover total users, M365 actions, average actions per week, and average active days. Compare active-day consistency by app and Copilot license status, then review normalized engagement segments.
 
-[![Copilot License Optimizer](images/4%20-%20Copilot%20License%20Optimizer.png)](images/4%20-%20Copilot%20License%20Optimizer.png)
+[![M365 Usage Activity](images/6%20-%20M365%20Usage%20Activity.png)](images/6%20-%20M365%20Usage%20Activity.png)
 *Click image to enlarge*
 
 </details>
 
 <details>
-<summary><strong>5. Copilot Enablement Strategy</strong></summary>
+<summary><strong>7. Copilot Enablement Strategy</strong></summary>
 
 A table-first workflow classifying every user into four cohorts: **Enablement Targets** (high M365 / low Copilot), **Champions** (high on both), **AI-First** (low M365 / high Copilot), and **Low Engagement** (low on both). Select an activity lens to compare app-specific percentiles, then sort by Enablement Gap to prioritize targeted training.
 
-[![Copilot Enablement Strategy](images/5%20-%20Copilot%20Enablement%20Strategy.png)](images/5%20-%20Copilot%20Enablement%20Strategy.png)
+[![Copilot Enablement Strategy](images/7%20-%20Copilot%20Enablement%20Strategy.png)](images/7%20-%20Copilot%20Enablement%20Strategy.png)
 *Click image to enlarge*
 
 </details>
 
 <details>
-<summary><strong>6. Copilot Champions</strong></summary>
+<summary><strong>8. Copilot License Optimizer</strong></summary>
+
+Review existing licenses against a selectable 30-, 60-, or 90-day inactivity window. The left table shows inactive licensed users and recommends **Enable** or **Reclaim** based on recent M365 activity. The right table ranks unlicensed License-First candidates using the selected Copilot, Agent, and M365 signals.
+
+[![Copilot License Optimizer](images/8%20-%20Copilot%20License%20Optimizer.png)](images/8%20-%20Copilot%20License%20Optimizer.png)
+*Click image to enlarge*
+
+</details>
+
+<details>
+<summary><strong>9. Copilot Champions</strong></summary>
 
 Identify top-decile Copilot users, compare their activity with the tenant average, and see which champions also use Copilot agents. Filter by lookback window, champion tier, agent activity, and department; export the ranked table to recruit pilot leaders and peer advocates.
 
-[![Copilot Champions](images/6%20-%20Copilot%20Champions.png)](images/6%20-%20Copilot%20Champions.png)
+[![Copilot Champions](images/9%20-%20Copilot%20Champions.png)](images/9%20-%20Copilot%20Champions.png)
 *Click image to enlarge*
 
 </details>
 
 <details>
-<summary><strong>7. Glossary and Metric Definitions</strong></summary>
+<summary><strong>10. Glossary and Metric Definitions</strong></summary>
 
-Page-aware reference covering the measures, selectors, thresholds, and analytical concepts used across the dashboard. Filter by one or more report pages to focus the table on the definitions relevant to the analysis in front of you.
+Page-aware reference covering the measures, selectors, thresholds, data sources, and analytical concepts used across the dashboard. Filter by one or more report pages to focus the table on the definitions relevant to the analysis in front of you.
 
-[![Glossary and Metric Definitions](images/7%20-%20Glossary%20and%20Metric%20Definitions.png)](images/7%20-%20Glossary%20and%20Metric%20Definitions.png)
-*Click image to enlarge*
-
-</details>
-
-<details>
-<summary><strong>8. M365 Usage Activity</strong></summary>
-
-Four KPI cards cover total users, M365 actions, average actions per week, and average active days. Compare active-day consistency by app and Copilot license status, then review the normalized engagement distribution: **Daily** (5+ days/week), **Frequent** (3–4), **Moderate** (1–2), and **Light** (&lt;1).
-
-[![M365 Usage Activity](images/8%20-%20M365%20Usage%20Activity.png)](images/8%20-%20M365%20Usage%20Activity.png)
+[![Glossary and Metric Definitions](images/10%20-%20Glossary%20and%20Metric%20Definitions.png)](images/10%20-%20Glossary%20and%20Metric%20Definitions.png)
 *Click image to enlarge*
 
 </details>
@@ -787,12 +812,14 @@ Use the report pages in this order to tell a complete Copilot readiness story:
 
 1. **Executive Summary** — Overall tenant snapshot
 2. **M365 Usage Trends** — Week-over-week engagement by app
-3. **Copilot License Recommendations** — Ranked candidates with adjustable weights
-4. **Copilot License Optimizer** — Inactive-license reclamation and License-First assignments
-5. **Copilot Enablement Strategy** — Champions, Enablement Targets, AI-First, and Low Engagement
-6. **Copilot Champions** — Peer advocate and pilot-lead identification
-7. **Glossary & Definitions** — Page-filtered metric and methodology reference
-8. **M365 Usage Activity** — Engagement segments and active-day comparisons
+3. **Department Readiness Benchmark** — Department-level readiness, utilization, and action priorities
+4. **Adoption Momentum** — Current-versus-previous 30-day movement
+5. **Copilot License Recommendations** — Ranked candidates with adjustable weights
+6. **M365 Usage Activity** — Engagement segments and active-day comparisons
+7. **Copilot Enablement Strategy** — Champions, Enablement Targets, AI-First, and Low Engagement
+8. **Copilot License Optimizer** — Inactive-license reclamation and License-First assignments
+9. **Copilot Champions** — Peer advocate and pilot-lead identification
+10. **Glossary & Definitions** — Page-filtered metric and methodology reference
 
 </details>
 
