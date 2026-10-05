@@ -497,7 +497,7 @@ Compare the latest 30 days with the previous 30 days for M365 actions or Copilot
 <details>
 <summary><strong>5. Copilot License Recommendations</strong></summary>
 
-Every user ranked by a weighted composite score (0–100) blending their percentile across selected M365 apps. Choose from four profile presets — Balanced, Collaboration Focus, Content Creation, or Custom — to model different licensing scenarios. Users are classified into action categories: License First (≥90th percentile), License Next (75th–89th), Potential (50th–74th), and Developing (<50th). A Customize Weight panel lets you manually adjust per-app weights.
+Unlicensed users are ranked by a weighted composite score (0–100) blending their percentile across selected M365 apps. Choose from four profile presets — Balanced, Collaboration Focus, Content Creation, or Custom — to model different licensing scenarios. Users are classified into action categories: License First (≥90th percentile), License Next (75th–89th), Potential (50th–74th), and Developing (<50th). A Customize Weight panel lets you manually adjust per-app weights.
 
 [![Copilot License Recommendations](images/5%20-%20Copilot%20License%20Recommendations.png)](images/5%20-%20Copilot%20License%20Recommendations.png)
 *Click image to enlarge*
@@ -527,7 +527,7 @@ A table-first workflow classifying every user into four cohorts: **Enablement Ta
 <details>
 <summary><strong>8. Copilot License Optimizer</strong></summary>
 
-Review existing licenses against a selectable 30-, 60-, or 90-day inactivity window. The left table shows inactive licensed users and recommends **Enable** or **Reclaim** based on recent M365 activity. The right table ranks unlicensed License-First candidates using the selected Copilot, Agent, and M365 signals.
+Review existing licenses against a selectable 30-, 60-, or 90-day dataset-relative analysis window. The left table shows inactive licensed users and recommends **Enable** or **Reclaim** from M365 activity in that window. The right table ranks unlicensed candidates with M365 activity as the required baseline; free Copilot Chat and agent usage are optional signals, and selected signals with no user activity contribute zero rather than being ignored.
 
 [![Copilot License Optimizer](images/8%20-%20Copilot%20License%20Optimizer.png)](images/8%20-%20Copilot%20License%20Optimizer.png)
 *Click image to enlarge*
@@ -545,7 +545,7 @@ Identify top-decile Copilot users, compare their activity with the tenant averag
 </details>
 
 <details>
-<summary><strong>10. Glossary and Metric Definitions</strong></summary>
+<summary><strong>10. Metric Glossary</strong></summary>
 
 Page-aware reference covering the measures, selectors, thresholds, data sources, and analytical concepts used across the dashboard. Filter by one or more report pages to focus the table on the definitions relevant to the analysis in front of you.
 
