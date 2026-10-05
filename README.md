@@ -51,7 +51,12 @@
 
 Open [M365 Dashboard - DEMO PBIX.pbix](M365%20Dashboard%20-%20DEMO%20PBIX.pbix) to explore the report immediately with cached synthetic `@example.com` users. This PBIX is for preview and testing only; it is not the tenant-data template.
 
-For your own Purview and Entra data, use [M365 Usage Dashboard - September 5 2026.pbit](M365%20Usage%20Dashboard%20-%20September%205%202026.pbit) and follow the [Quick Start](#quick-start). The PBIT remains the primary template and is not replaced or removed. See the updated [Interpretation Guide](M365%20Usage%20Dashboard%20-%20Interpretation%20Guide.pdf).
+For your own Purview and Entra data, choose one of these templates and follow the [Quick Start](#quick-start):
+
+- **Local files (primary):** [M365 Usage Dashboard - September 5 2026.pbit](M365%20Usage%20Dashboard%20-%20September%205%202026.pbit)
+- **SharePoint files (secondary):** [M365 Usage Dashboard - September 5 2026 - SharePoint.pbit](M365%20Usage%20Dashboard%20-%20September%205%202026%20-%20SharePoint.pbit)
+
+The SharePoint option has the same report and model logic as the primary template. It accepts direct HTTPS paths to CSV files in SharePoint Online, copied from **Details** → **Path** → **Copy**. Sharing links, viewer/library URLs, query strings, and fragments are rejected with guidance. The local-file PBIT remains the primary template and is not replaced or removed. See the updated [Interpretation Guide](M365%20Usage%20Dashboard%20-%20Interpretation%20Guide.pdf).
 
 ![M365 Usage Dashboard — animated report preview](images/report-pages-carousel.gif)
 
@@ -376,17 +381,21 @@ subprocess.run([
 <a id="step-3-open-in-power-bi-desktop"></a>
 ### Step 3. Open in Power BI Desktop
 
-1. Open **Power BI Desktop** → **File** → **Open report** → **Browse** → select the `.pbit` template from this folder
+1. Open **Power BI Desktop** → **File** → **Open report** → **Browse**, then choose:
+   - `M365 Usage Dashboard - September 5 2026.pbit` for local or network file paths
+   - `M365 Usage Dashboard - September 5 2026 - SharePoint.pbit` for SharePoint Online file paths
 2. Go to **Home** → **Transform data** → **Edit parameters**
 3. Set the five file paths:
 
-   | Parameter | Value |
-   |---|---|
-   | `M365 Rollup Data` | Full path to the **Rollup** CSV |
-   | `M365 User Stats Data` | Full path to the **UserStats** CSV |
-   | `M365 Session Cohort Data` | Full path to the **SessionCohort** CSV |
-   | `M365 Session Stats Data` | Full path to the **SessionStats** CSV (powers the **Copilot Prompts ✨** column) |
-   | `Entra Users Data` | Full path to your Entra user details CSV |
+   | Parameter | Local template | SharePoint template |
+   |---|---|---|
+   | `M365 Rollup Data` | Full path to the **Rollup** CSV | Direct HTTPS path to the **Rollup** CSV |
+   | `M365 User Stats Data` | Full path to the **UserStats** CSV | Direct HTTPS path to the **UserStats** CSV |
+   | `M365 Session Cohort Data` | Full path to the **SessionCohort** CSV | Direct HTTPS path to the **SessionCohort** CSV |
+   | `M365 Session Stats Data` | Full path to the **SessionStats** CSV | Direct HTTPS path to the **SessionStats** CSV (powers the **Copilot Prompts ✨** column) |
+   | `Entra Users Data` | Full path to the Entra user details CSV | Direct HTTPS path to the Entra user details CSV |
+
+   For the SharePoint template, select each CSV in SharePoint, open **Details**, and use **Path** → **Copy**. Paste the path unchanged. When prompted, authenticate with an **Organizational account** that has read access. For Power BI Service refresh, configure the cloud connection in the same tenant.
 
 4. Click **OK** → **Apply changes**
 5. Click **Refresh** on the Home ribbon — allow several minutes on first load with large datasets
@@ -488,7 +497,7 @@ Compare the latest 30 days with the previous 30 days for M365 actions or Copilot
 <details>
 <summary><strong>5. Copilot License Recommendations</strong></summary>
 
-Every user ranked by a weighted composite score (0–100) blending their percentile across selected M365 apps. Choose from four profile presets — Balanced, Collaboration Focus, Content Creation, or Custom — to model different licensing scenarios. Users are classified into action categories: License First (≥90th percentile), License Next (75th–89th), Potential (50th–74th), and Developing (<50th). A Customize Weight panel lets you manually adjust per-app weights.
+Unlicensed users are ranked by a weighted composite score (0–100) blending their percentile across selected M365 apps. Choose from four profile presets — Balanced, Collaboration Focus, Content Creation, or Custom — to model different licensing scenarios. Users are classified into action categories: License First (≥90th percentile), License Next (75th–89th), Potential (50th–74th), and Developing (<50th). A Customize Weight panel lets you manually adjust per-app weights.
 
 [![Copilot License Recommendations](images/5%20-%20Copilot%20License%20Recommendations.png)](images/5%20-%20Copilot%20License%20Recommendations.png)
 *Click image to enlarge*
@@ -518,7 +527,7 @@ A table-first workflow classifying every user into four cohorts: **Enablement Ta
 <details>
 <summary><strong>8. Copilot License Optimizer</strong></summary>
 
-Review existing licenses against a selectable 30-, 60-, or 90-day inactivity window. The left table shows inactive licensed users and recommends **Enable** or **Reclaim** based on recent M365 activity. The right table ranks unlicensed License-First candidates using the selected Copilot, Agent, and M365 signals.
+Review existing licenses against a selectable 30-, 60-, or 90-day dataset-relative analysis window. The left table shows inactive licensed users and recommends **Enable** or **Reclaim** from M365 activity in that window. The right table ranks unlicensed candidates with M365 activity as the required baseline; free Copilot Chat and agent usage are optional signals, and selected signals with no user activity contribute zero rather than being ignored.
 
 [![Copilot License Optimizer](images/8%20-%20Copilot%20License%20Optimizer.png)](images/8%20-%20Copilot%20License%20Optimizer.png)
 *Click image to enlarge*
@@ -536,7 +545,7 @@ Identify top-decile Copilot users, compare their activity with the tenant averag
 </details>
 
 <details>
-<summary><strong>10. Glossary and Metric Definitions</strong></summary>
+<summary><strong>10. Metric Glossary</strong></summary>
 
 Page-aware reference covering the measures, selectors, thresholds, data sources, and analytical concepts used across the dashboard. Filter by one or more report pages to focus the table on the definitions relevant to the analysis in front of you.
 
