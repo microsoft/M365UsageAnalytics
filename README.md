@@ -60,9 +60,11 @@ The SharePoint option has the same report and model logic as the primary templat
 
 ![M365 Usage Dashboard — animated report preview](images/report-pages-carousel.gif)
 
-> 🎬 **New — M365 Usage Dashboard Overview (video):** a quick video walkthrough of the dashboard's capabilities — the fastest way to see what it does before diving into setup.
+> 🎬 **Watch first — M365 Usage Dashboard Overview:** a quick video walkthrough of the dashboard's capabilities — the fastest way to see what it does before diving into setup.
 >
-> https://github.com/microsoft/M365UsageAnalytics/releases/download/M365_Usage_Analytics/M365UsageAnalytics_Overview.mp4
+> [![Watch the M365 Usage Dashboard overview](https://img.youtube.com/vi/uwfv8qrcs5E/maxresdefault.jpg)](https://youtu.be/uwfv8qrcs5E)
+>
+> ▶ [Watch on YouTube](https://youtu.be/uwfv8qrcs5E)
 
 ---
 
